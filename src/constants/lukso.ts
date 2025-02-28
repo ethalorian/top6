@@ -1,5 +1,4 @@
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
-import { ERC725JSONSchema } from '@erc725/erc725.js';
+
 import { ERC725SchemaConfig } from '../types/lukso';
 
 /**
