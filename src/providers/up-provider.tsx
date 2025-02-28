@@ -64,7 +64,7 @@ export function UPProvider({ children }: { children: React.ReactNode }) {
       provider.removeListener('accountsChanged', accountsChanged);
       provider.removeListener('contextAccountsChanged', contextAccountsChanged);
     };
-  }, [updateConnected]);
+  }, [updateConnected, accounts, contextAccounts]);
 
   if (!provider) {
     return null; // or a loading state

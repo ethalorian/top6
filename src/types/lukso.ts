@@ -8,7 +8,7 @@ export interface TopAccountsManager {
   addAddress(address: string): boolean;
   removeAddress(address: string): boolean;
   getAddresses(): string[];
-  encodeAddresses(): any;
+  encodeAddresses(): EncodedData;
   storeAddressesOnProfile(privateKey: string, rpcUrl: string): Promise<string>;
 }
 

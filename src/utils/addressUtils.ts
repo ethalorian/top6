@@ -20,7 +20,7 @@ export function normalizeAddress(address: string): string | null {
       return null;
     }
     return ethers.utils.getAddress(address);
-  } catch (error) {
+  } catch (_) {
     return null;
   }
 }
