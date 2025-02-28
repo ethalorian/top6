@@ -1,6 +1,6 @@
 'use client';
 
-import { UPProvider } from "./up-provider";
+import { UPProvider } from './up-provider';
 // Import other providers as needed
 
 export function Providers({ children }: { children: React.ReactNode }) {
