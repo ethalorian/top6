@@ -9,7 +9,9 @@
     "lint": "next lint"
   },
   "dependencies": {
+    "@erc725/erc725.js": "^0.27.2",
     "@lukso/up-provider": "^0.3.5",
+    "ethers": "^5.8.0",
     "next": "15.2.0",
     "react": "^19.0.0",
     "react-dom": "^19.0.0"
