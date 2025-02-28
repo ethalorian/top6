@@ -26,21 +26,22 @@ export function UPProvider({ children }: { children: React.ReactNode }) {
     []
   );
 
-  // Initialize provider in useEffect
   useEffect(() => {
     const provider = createClientUPProvider();
     setProvider(provider);
 
     async function init() {
       try {
-        const _accounts = provider.accounts as Array<`0x${string}`>;
+        const _accounts = await provider.request({ method: 'eth_accounts' }) as Array<`0x${string}`>;
         setAccounts(_accounts);
 
-        const _contextAccounts = provider.contextAccounts;
+        const _contextAccounts = await provider.request({ method: 'eth_requestAccounts' }) as Array<`0x${string}`>;
         setContextAccounts(_contextAccounts);
+        
         updateConnected(_accounts, _contextAccounts);
       } catch (error) {
         console.error('Failed to initialize provider:', error);
+        setProfileConnected(false);
       }
     }
 
@@ -63,7 +64,7 @@ export function UPProvider({ children }: { children: React.ReactNode }) {
       provider.removeListener('accountsChanged', accountsChanged);
       provider.removeListener('contextAccountsChanged', contextAccountsChanged);
     };
-  }, [accounts, contextAccounts, updateConnected]);
+  }, [updateConnected]);
 
   if (!provider) {
     return null; // or a loading state
