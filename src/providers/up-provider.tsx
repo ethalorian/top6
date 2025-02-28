@@ -3,9 +3,6 @@
 import { createClientUPProvider } from '@lukso/up-provider';
 import { createContext, useCallback, useContext, useEffect, useState } from 'react';
 
-// Create the provider instance
-const provider = createClientUPProvider();
-
 // Create context with type definitions
 interface UPContextType {
   accounts: Array<`0x${string}`>;
@@ -17,6 +14,7 @@ interface UPContextType {
 const UPContext = createContext<UPContextType | undefined>(undefined);
 
 export function UPProvider({ children }: { children: React.ReactNode }) {
+  const [provider, setProvider] = useState<ReturnType<typeof createClientUPProvider> | null>(null);
   const [accounts, setAccounts] = useState<Array<`0x${string}`>>([]);
   const [contextAccounts, setContextAccounts] = useState<Array<`0x${string}`>>([]);
   const [profileConnected, setProfileConnected] = useState(false);
@@ -28,7 +26,11 @@ export function UPProvider({ children }: { children: React.ReactNode }) {
     []
   );
 
+  // Initialize provider in useEffect
   useEffect(() => {
+    const provider = createClientUPProvider();
+    setProvider(provider);
+
     async function init() {
       try {
         const _accounts = provider.accounts as Array<`0x${string}`>;
@@ -62,6 +64,10 @@ export function UPProvider({ children }: { children: React.ReactNode }) {
       provider.removeListener('contextAccountsChanged', contextAccountsChanged);
     };
   }, [accounts, contextAccounts, updateConnected]);
+
+  if (!provider) {
+    return null; // or a loading state
+  }
 
   return (
     <UPContext.Provider value={{ accounts, contextAccounts, profileConnected, provider }}>
