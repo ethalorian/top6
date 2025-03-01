@@ -146,10 +146,12 @@ export class LuksoTopAccountsManager implements TopAccountsManager {
     console.log('Addresses being encoded:', nonEmptyAddresses);
     
     try {
-      // Use the correct schema name from your config
+      // Make sure the keyName matches exactly the name in your schema
+      const schemaName = ERC725_CONFIG.TOP_ACCOUNTS_SCHEMA[0].name;
+      
       const encoded = erc725js.encodeData([
         {
-          keyName: "MyTopAccounts",
+          keyName: schemaName,
           value: nonEmptyAddresses
         }
       ]);
@@ -158,7 +160,8 @@ export class LuksoTopAccountsManager implements TopAccountsManager {
       return encoded;
     } catch (error) {
       console.error('Error encoding data:', error);
-      throw error; // Throw to make sure we catch encoding issues
+      // Return empty encoded data to avoid crashing
+      return { keys: [], values: [] };
     }
   }
   
