@@ -136,18 +136,29 @@ export class LuksoTopAccountsManager implements TopAccountsManager {
    * @returns Encoded data ready for storage
    */
   encodeAddresses(): EncodedData {
-    const erc725js = new ERC725(ERC725_CONFIG.TOP_ACCOUNTS_SCHEMA);
-    
-    // Only include non-null addresses
-    const nonEmptyAddresses = this.slots
-      .filter(address => address !== null)
-      .map(address => address as string);
-    
-    console.log('Addresses being encoded:', nonEmptyAddresses);
-    
     try {
-      // Make sure the keyName matches exactly the name in your schema
+      // Create ERC725 instance with proper schema
+      const erc725js = new ERC725(ERC725_CONFIG.TOP_ACCOUNTS_SCHEMA);
+      
+      // Get non-empty addresses
+      const nonEmptyAddresses = this.slots
+        .filter(address => address !== null)
+        .map(address => address as string);
+      
+      if (nonEmptyAddresses.length === 0) {
+        throw new Error('No addresses to encode');
+      }
+      
+      console.log('Addresses being encoded:', nonEmptyAddresses);
+      
+      // Encode the data using the exact schema name
       const schemaName = ERC725_CONFIG.TOP_ACCOUNTS_SCHEMA[0].name;
+      console.log('Using schema name:', schemaName);
+      
+      // Check if schema exists
+      if (!ERC725_CONFIG.TOP_ACCOUNTS_SCHEMA.some(schema => schema.name === schemaName)) {
+        throw new Error(`Schema "${schemaName}" not found in ERC725_CONFIG`);
+      }
       
       const encoded = erc725js.encodeData([
         {
@@ -156,12 +167,16 @@ export class LuksoTopAccountsManager implements TopAccountsManager {
         }
       ]);
       
+      // Validate encoded data has content
+      if (!encoded.keys.length || !encoded.values.length) {
+        throw new Error('Encoding produced empty data');
+      }
+      
       console.log('Encoded data:', encoded);
       return encoded;
     } catch (error) {
       console.error('Error encoding data:', error);
-      // Return empty encoded data to avoid crashing
-      return { keys: [], values: [] };
+      throw error; // Throw the error to prevent sending invalid data
     }
   }
   

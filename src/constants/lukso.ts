@@ -9,8 +9,8 @@ export const ERC725_CONFIG: ERC725SchemaConfig = {
     {
       name: 'MyTopAccounts',
       key: '0x19465d1fa6b15b330296b08997725c2c11937b3291cd13455901acc35602d8f9',
-      keyType: 'Mapping',
-      valueType: 'address[]',
+      keyType: 'Array',
+      valueType: 'address',
       valueContent: 'Address'
     }
   ]
