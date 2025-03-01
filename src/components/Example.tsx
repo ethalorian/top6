@@ -73,6 +73,30 @@ function TopAccountsManager() {
     }
   };
 
+  const handleSetupAndSave = async () => {
+    if (!manager || !profileConnected || contextAccounts.length === 0) {
+      setStatusMessage('Please connect your Universal Profile first');
+      return;
+    }
+    
+    try {
+      setStatusMessage('Setting up permissions and saving... Please approve transaction(s) in your wallet');
+      
+      // Call the new method that handles both setup and saving
+      const txHash = await manager.setupAndStoreAddresses(provider, contextAccounts[0]);
+      
+      setStatusMessage(`Transaction successful! Hash: ${txHash.substring(0, 10)}...${txHash.substring(txHash.length - 8)}`);
+    } catch (error) {
+      console.error('Setup and save error:', error);
+      
+      if (error instanceof Error) {
+        setStatusMessage(`Error: ${error.message}`);
+      } else {
+        setStatusMessage('Unknown error occurred');
+      }
+    }
+  };
+
   return (
     <div>
       <h2>Top Accounts Manager</h2>
@@ -124,6 +148,13 @@ function TopAccountsManager() {
         disabled={!profileConnected}
       >
         Save to Blockchain
+      </button>
+      
+      <button 
+        onClick={handleSetupAndSave}
+        disabled={!profileConnected || contextAccounts.length === 0}
+      >
+        Setup & Save Top Accounts
       </button>
       
       {statusMessage && (

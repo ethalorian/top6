@@ -594,4 +594,110 @@ export class LuksoTopAccountsManager implements TopAccountsManager {
       return false;
     }
   }
+
+  /**
+   * Set up the required permissions and then store addresses on profile
+   * @param provider The UP provider
+   * @param upAddress The Universal Profile address
+   * @returns Transaction hash or throws error
+   */
+  async setupAndStoreAddresses(
+    provider: ReturnType<typeof createClientUPProvider>,
+    upAddress: string
+  ): Promise<string> {
+    try {
+      // Step 1: Check if current account is the owner or has proper permissions
+      console.log('Checking account capabilities for:', upAddress);
+      
+      // Create a read-only provider
+      const readProvider = new ethers.providers.JsonRpcProvider('https://rpc.mainnet.lukso.network');
+      const erc725 = new ERC725([], upAddress, readProvider);
+      
+      // Check for owner status or permissions
+      const ownerKey = '0x0000000000000000000000000000000000000000000000000000000000000000';
+      const ownerData = await erc725.getData(ownerKey);
+      const ownerAddress = ownerData?.value?.toString().toLowerCase();
+      
+      // Get permission key for connected address
+      const permissionKey = `0x4b80742de2bf82acb3630000${upAddress.substring(2).toLowerCase()}`;
+      const permissions = await erc725.getData(permissionKey);
+      const permValue = permissions?.value ? permissions.value.toString() : '0x0';
+      
+      // Check for elevated permissions
+      const hasSuperSetDataPermission = permissions?.value && 
+        (BigInt(permValue) & BigInt('0x0000000000000000000000000000000000000000000000000000000000020000')) !== BigInt(0);
+        
+      const isOwnerOrHasSuperPerm = 
+        (ownerAddress === upAddress.toLowerCase()) || hasSuperSetDataPermission;
+      
+      console.log('Account status:', { 
+        isOwner: ownerAddress === upAddress.toLowerCase(),
+        hasSuperSetData: hasSuperSetDataPermission
+      });
+      
+      // Step 2: If owner or has high permissions, ensure data permissions are set
+      if (isOwnerOrHasSuperPerm) {
+        console.log('Account has sufficient permissions to setup data access');
+        
+        // Allow this account to write top accounts data
+        const topAccountsKey = '0x38a0b0a149d59d46ad9c7fa612f0972948f82cc6f052268ef13a9e7da8a1dc84';
+        
+        // Check if the account has specific permission for this key
+        const hasSpecificPermission = await this.checkPermission(provider, upAddress, upAddress);
+        
+        if (!hasSpecificPermission) {
+          console.log('Setting up specific data permissions');
+          
+          // Create schema for allowed keys
+          const allowedKeysSchema = [{
+            name: 'AddressPermissions:AllowedERC725YDataKeys:' + upAddress,
+            key: '0x4b80742de2bf866c29110000' + upAddress.substring(2).toLowerCase(),
+            keyType: 'MappingWithGrouping',
+            valueType: 'bytes[CompactBytesArray]',
+            valueContent: 'Bytes'
+          }];
+          
+          // Create compact bytes array with the top accounts key
+          const compactBytesArray = '0x0020' + topAccountsKey.substring(2);
+          
+          const allowedKeysEncoded = new ERC725(allowedKeysSchema).encodeData([{
+            keyName: 'AddressPermissions:AllowedERC725YDataKeys:' + upAddress,
+            value: compactBytesArray
+          }]);
+          
+          // Send transaction to set permissions
+          const functionSelector = '0x14a6c251'; // setData(bytes32[],bytes[])
+          const encodedParams = ethers.utils.defaultAbiCoder.encode(
+            ['bytes32[]', 'bytes[]'],
+            [allowedKeysEncoded.keys, allowedKeysEncoded.values]
+          );
+          
+          const data = ethers.utils.hexConcat([functionSelector, encodedParams]);
+          
+          const transaction = {
+            from: upAddress,
+            to: upAddress,
+            data: data
+          };
+          
+          const setupTxHash = await provider.request({
+            method: 'eth_sendTransaction',
+            params: [transaction]
+          });
+          
+          console.log('Permission setup transaction sent:', setupTxHash);
+          
+          // Wait briefly to allow transaction to propagate
+          await new Promise(resolve => setTimeout(resolve, 2000));
+        }
+      }
+      
+      // Step 3: Try to store the addresses (this will work if permissions are correct)
+      return await this.storeAddressesOnProfile(provider, upAddress);
+      
+    } catch (error) {
+      console.error('Error in setup and store process:', error);
+      throw error;
+    }
+  }
 }
