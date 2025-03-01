@@ -179,43 +179,36 @@ export class LuksoTopAccountsManager implements TopAccountsManager {
       throw new Error('Provider and address are required');
     }
     
-    // Check permissions first
     try {
-      const permissionData = await provider.request({
-        method: 'eth_call',
-        params: [{
-          to: address,
-          data: '0x0d40a41f' // Function selector for getPermissions()
-        }, 'latest']
-      });
-      console.log('Permissions data:', permissionData);
-    } catch (e) {
-      console.warn('Could not check permissions:', e);
-    }
-    
-    // Encode the addresses
-    const { keys, values } = this.encodeAddresses();
-    
-    // Create the transaction parameters
-    const txParams = {
-      from: address,
-      to: address,
-      data: ethers.utils.hexConcat([
-        '0x14a6c251', // Function selector for setData(bytes32[],bytes[])
-        ethers.utils.defaultAbiCoder.encode(['bytes32[]', 'bytes[]'], [keys, values])
-      ])
-    };
-    
-    // Send the transaction using the UP provider
-    try {
+      // Encode the addresses
+      const { keys, values } = this.encodeAddresses();
+      
+      if (keys.length === 0 || values.length === 0) {
+        throw new Error('No data to encode');
+      }
+      
+      console.log('Encoded data to send:', { keys, values });
+      
+      // Create the setData call directly
+      const setDataCall = {
+        from: address,
+        to: address,
+        data: ethers.utils.hexConcat([
+          '0x14a6c251', // Function selector for setData(bytes32[],bytes[])
+          ethers.utils.defaultAbiCoder.encode(['bytes32[]', 'bytes[]'], [keys, values])
+        ])
+      };
+      
+      // Send through the UP provider
       const txHash = await provider.request({
         method: 'eth_sendTransaction',
-        params: [txParams],
+        params: [setDataCall]
       });
       
+      console.log('Transaction submitted:', txHash);
       return txHash;
     } catch (error) {
-      console.error('Error sending transaction:', error);
+      console.error('Error storing addresses:', error);
       throw error;
     }
   }
@@ -238,5 +231,38 @@ export class LuksoTopAccountsManager implements TopAccountsManager {
     // Clear the slot
     this.slots[slot] = null;
     return true;
+  }
+
+  /**
+   * Retrieve top accounts from any Universal Profile address
+   * @param upAddress The Universal Profile address to query
+   * @returns Array of stored top account addresses
+   */
+  async getStoredAddresses(upAddress: string): Promise<string[]> {
+    try {
+      // Create a standard ethers provider for read-only operations
+      const provider = new ethers.providers.JsonRpcProvider('https://rpc.lukso.network');
+      
+      // Initialize ERC725 with the provider and target address
+      const erc725js = new ERC725(
+        ERC725_CONFIG.TOP_ACCOUNTS_SCHEMA,
+        upAddress,
+        provider
+      );
+      
+      // Get data using the key name from your schema
+      const data = await erc725js.getData('MyTopAccounts');
+      console.log('Retrieved top accounts data:', data);
+      
+      // Handle the complex data structure ERC725.js returns
+      if (data && data.value && Array.isArray(data.value)) {
+        return data.value.filter(Boolean) as string[];
+      } else {
+        return [];
+      }
+    } catch (error) {
+      console.error('Error retrieving top accounts:', error);
+      return [];
+    }
   }
 }
