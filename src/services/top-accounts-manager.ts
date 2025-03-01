@@ -138,29 +138,27 @@ export class LuksoTopAccountsManager implements TopAccountsManager {
   encodeAddresses(): EncodedData {
     const erc725js = new ERC725(ERC725_CONFIG.TOP_ACCOUNTS_SCHEMA);
     
-    // For array-type schema, we need to encode the entire array at once
-    // Only include non-null addresses in the array
+    // Only include non-null addresses
     const nonEmptyAddresses = this.slots
-      .map((address, index) => ({
-        address: address || "0x0000000000000000000000000000000000000000",
-        index
-      }))
-      .filter(item => item.address !== null)
-      .sort((a, b) => a.index - b.index)
-      .map(item => item.address);
+      .filter(address => address !== null)
+      .map(address => address as string);
+    
+    console.log('Addresses being encoded:', nonEmptyAddresses);
     
     try {
-      // Encode the entire array at once using the schema name
-      return erc725js.encodeData([
+      // Use the correct schema name from your config
+      const encoded = erc725js.encodeData([
         {
-          keyName: "MyTopAccounts", // Match the name in your schema
+          keyName: "MyTopAccounts",
           value: nonEmptyAddresses
         }
       ]);
+      
+      console.log('Encoded data:', encoded);
+      return encoded;
     } catch (error) {
       console.error('Error encoding data:', error);
-      // Return empty encoded data to avoid crashing
-      return { keys: [], values: [] };
+      throw error; // Throw to make sure we catch encoding issues
     }
   }
   
@@ -176,6 +174,20 @@ export class LuksoTopAccountsManager implements TopAccountsManager {
   ): Promise<string> {
     if (!provider || !address) {
       throw new Error('Provider and address are required');
+    }
+    
+    // Check permissions first
+    try {
+      const permissionData = await provider.request({
+        method: 'eth_call',
+        params: [{
+          to: address,
+          data: '0x0d40a41f' // Function selector for getPermissions()
+        }, 'latest']
+      });
+      console.log('Permissions data:', permissionData);
+    } catch (e) {
+      console.warn('Could not check permissions:', e);
     }
     
     // Encode the addresses
