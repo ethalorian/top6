@@ -168,7 +168,7 @@ export class LuksoTopAccountsManager implements TopAccountsManager {
   /**
    * Store the addresses on the Universal Profile using a LUKSO UP provider
    * @param provider The UP provider from useUPProvider
-   * @param address The address of the Universal Profile (already deployed)
+   * @param address The address of the Universal Profile
    * @returns Transaction hash
    */
   async storeAddressesOnProfile(
@@ -180,64 +180,51 @@ export class LuksoTopAccountsManager implements TopAccountsManager {
     }
     
     try {
-      // Define a more precise type for the provider
-      type JsonRpcRequest = {
-        method: string;
-        params?: unknown[];
-        id?: number | string;
-        jsonrpc?: string;
-      };
-      
-      type JsonRpcResponse = {
-        result?: unknown;
-        error?: { code: number; message: string; data?: unknown };
-        id: number | string;
-        jsonrpc?: string;
-      };
-      
-      type EthersCompatibleProvider = {
-        request: (request: JsonRpcRequest) => Promise<unknown>;
-        sendAsync?: (
-          request: JsonRpcRequest, 
-          callback: (error: Error | null, response: JsonRpcResponse) => void
-        ) => void;
-        send?: (
-          request: JsonRpcRequest, 
-          callback: (error: Error | null, response: JsonRpcResponse) => void
-        ) => void;
-      };
-      
-      const ethersProvider = new ethers.providers.Web3Provider(
-        provider as unknown as EthersCompatibleProvider
-      );
-      
-      // Create an interface to your existing Universal Profile
-      const universalProfile = new ethers.Contract(
-        address, // Address of your existing UP
-        [
-          "function setData(bytes32[] _keys, bytes[] _values) external"
-        ],
-        ethersProvider.getSigner()
-      );
-      
-      // Encode the addresses using our existing method
+      // Encode the addresses
       const { keys, values } = this.encodeAddresses();
       
       if (keys.length === 0 || values.length === 0) {
         throw new Error('No data to encode');
       }
+
+      console.log('Encoded data to send:', { keys, values });
       
-      console.log('Sending data to existing UP contract:', { keys, values });
-      
-      // Call setData directly on the UP contract
-      const tx = await universalProfile.setData(keys, values, {
-        gasLimit: 500000 // Set explicit gas limit
+      // Bypass the ethers contract and use a raw JSON-RPC call for maximum control
+      // This uses the UP provider directly in the format it expects
+      const txHash = await provider.request({
+        method: 'eth_sendTransaction',
+        params: [{
+          from: address, // Important: The UP is both sender and recipient
+          to: address,   // The UP contract address
+          // Encode the function call manually
+          data: ethers.utils.hexConcat([
+            // Function selector for setData(bytes32[],bytes[])
+            '0x14a6c251', 
+            // Encode parameters
+            ethers.utils.defaultAbiCoder.encode(
+              ['bytes32[]', 'bytes[]'], 
+              [keys, values]
+            )
+          ]),
+          // Higher gas limit for safety
+          gas: ethers.utils.hexValue(1000000)
+        }]
       });
       
-      console.log('Transaction submitted:', tx.hash);
-      return tx.hash;
+      console.log('Transaction submitted:', txHash);
+      return txHash as string;
     } catch (error) {
-      console.error('Error storing addresses:', error);
+      // More detailed error logging
+      if (typeof error === 'object' && error !== null) {
+        const errorObj = error as Record<string, unknown>;
+        console.error('Detailed error:', {
+          message: errorObj.message || 'Unknown error',
+          code: errorObj.code,
+          data: errorObj.data,
+          stack: errorObj.stack
+        });
+      }
+      
       throw error;
     }
   }
