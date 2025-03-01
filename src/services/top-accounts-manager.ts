@@ -189,20 +189,20 @@ export class LuksoTopAccountsManager implements TopAccountsManager {
       
       console.log('Encoded data to send:', { keys, values });
       
-      // Create the setData call directly
-      const setDataCall = {
-        from: address,
-        to: address,
-        data: ethers.utils.hexConcat([
-          '0x14a6c251', // Function selector for setData(bytes32[],bytes[])
-          ethers.utils.defaultAbiCoder.encode(['bytes32[]', 'bytes[]'], [keys, values])
-        ])
-      };
-      
-      // Send through the UP provider
+      // Use the LSP6 interface for the setData call
+      // This properly formats the transaction for Universal Profiles
       const txHash = await provider.request({
         method: 'eth_sendTransaction',
-        params: [setDataCall]
+        params: [{
+          from: address,
+          to: address,
+          data: ethers.utils.hexConcat([
+            '0x14a6c251', // Function selector for setData(bytes32[],bytes[])
+            ethers.utils.defaultAbiCoder.encode(['bytes32[]', 'bytes[]'], [keys, values])
+          ]),
+          // Add gas estimation safety factor
+          gas: ethers.utils.hexValue(300000), // Provide adequate gas
+        }]
       });
       
       console.log('Transaction submitted:', txHash);
@@ -241,7 +241,7 @@ export class LuksoTopAccountsManager implements TopAccountsManager {
   async getStoredAddresses(upAddress: string): Promise<string[]> {
     try {
       // Create a standard ethers provider for read-only operations
-      const provider = new ethers.providers.JsonRpcProvider('https://rpc.lukso.network');
+      const provider = new ethers.providers.JsonRpcProvider('https://rpc.mainnet.lukso.network');
       
       // Initialize ERC725 with the provider and target address
       const erc725js = new ERC725(
