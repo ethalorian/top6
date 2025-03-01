@@ -168,7 +168,7 @@ export class LuksoTopAccountsManager implements TopAccountsManager {
   /**
    * Store the addresses on the Universal Profile using a LUKSO UP provider
    * @param provider The UP provider from useUPProvider
-   * @param address The address of the Universal Profile
+   * @param address The address of the Universal Profile (already deployed)
    * @returns Transaction hash
    */
   async storeAddressesOnProfile(
@@ -180,56 +180,34 @@ export class LuksoTopAccountsManager implements TopAccountsManager {
     }
     
     try {
-      // Encode the addresses
+      // Create ethers provider that uses the UP provider
+      const ethersProvider = new ethers.providers.Web3Provider(provider as any);
+      
+      // Create an interface to your existing Universal Profile
+      const universalProfile = new ethers.Contract(
+        address, // Address of your existing UP
+        [
+          "function setData(bytes32[] _keys, bytes[] _values) external"
+        ],
+        ethersProvider.getSigner()
+      );
+      
+      // Encode the addresses using our existing method
       const { keys, values } = this.encodeAddresses();
       
       if (keys.length === 0 || values.length === 0) {
         throw new Error('No data to encode');
       }
       
-      console.log('Encoded data to send:', { keys, values });
+      console.log('Sending data to existing UP contract:', { keys, values });
       
-      // Prepare transaction data
-      const functionSelector = '0x14a6c251'; // setData(bytes32[],bytes[])
-      const encodedParams = ethers.utils.defaultAbiCoder.encode(
-        ['bytes32[]', 'bytes[]'], 
-        [keys, values]
-      );
+      // Call setData directly on the UP contract
+      const tx = await universalProfile.setData(keys, values, {
+        gasLimit: 500000 // Set explicit gas limit
+      });
       
-      const data = ethers.utils.hexConcat([functionSelector, encodedParams]);
-      
-      // Send transaction with retry logic
-      let attempts = 0;
-      const maxAttempts = 3;
-      
-      while (attempts < maxAttempts) {
-        try {
-          const txHash = await provider.request({
-            method: 'eth_sendTransaction',
-            params: [{
-              from: address,
-              to: address,
-              data: data,
-              gas: ethers.utils.hexValue(500000), // Increased gas limit for safety
-            }]
-          });
-          
-          console.log('Transaction submitted successfully:', txHash);
-          return txHash as string;
-        } catch (error) {
-          attempts++;
-          console.error(`Transaction attempt ${attempts} failed:`, error);
-          
-          if (attempts >= maxAttempts) {
-            throw error;
-          }
-          
-          // Wait before retrying
-          await new Promise(resolve => setTimeout(resolve, 1000));
-        }
-      }
-      
-      throw new Error('Failed to submit transaction after multiple attempts');
+      console.log('Transaction submitted:', tx.hash);
+      return tx.hash;
     } catch (error) {
       console.error('Error storing addresses:', error);
       throw error;
