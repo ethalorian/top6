@@ -164,38 +164,41 @@ export class LuksoTopAccountsManager implements TopAccountsManager {
   }
   
   /**
-   * Store the addresses on the Universal Profile
-   * @param privateKey The private key of the Universal Profile
-   * @param rpcUrl The RPC URL of the Universal Profile
+   * Store the addresses on the Universal Profile using a LUKSO UP provider
+   * @param provider The UP provider from useUPProvider
+   * @param address The address of the Universal Profile
    * @returns Transaction hash
    */
-  async storeAddressesOnProfile(privateKey: string, rpcUrl: string): Promise<string> {
-    // Create a wallet with the private key
-    const wallet = new ethers.Wallet(privateKey);
+  async storeAddressesOnProfile(provider: any, address: string): Promise<string> {
+    if (!provider || !address) {
+      throw new Error('Provider and address are required');
+    }
     
-    // Connect wallet to a provider
-    const provider = new ethers.providers.JsonRpcProvider(rpcUrl);
-    const signer = wallet.connect(provider);
-    
-    // Get the address
-    const address = await signer.getAddress();
-    
-    // Encode the addresses and actually use the keys and values
+    // Encode the addresses
     const { keys, values } = this.encodeAddresses();
     
-    // Create the transaction with the actual encoded data
-    const transaction = {
+    // Create the transaction parameters
+    const txParams = {
+      from: address,
       to: address,
-      // Use the keys and values in the transaction data
       data: ethers.utils.hexConcat([
         '0x14a6c251', // Function selector for setData(bytes32[],bytes[])
         ethers.utils.defaultAbiCoder.encode(['bytes32[]', 'bytes[]'], [keys, values])
       ])
     };
     
-    // Send the transaction
-    const txResponse = await signer.sendTransaction(transaction);
-    return txResponse.hash;
+    // Send the transaction using the UP provider
+    try {
+      const txHash = await provider.request({
+        method: 'eth_sendTransaction',
+        params: [txParams],
+      });
+      
+      return txHash;
+    } catch (error) {
+      console.error('Error sending transaction:', error);
+      throw error;
+    }
   }
   
   /**
