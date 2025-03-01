@@ -180,41 +180,79 @@ export class LuksoTopAccountsManager implements TopAccountsManager {
     }
     
     try {
-      // Encode the addresses
+      console.log('Step 1: Starting transaction process with address:', address);
+      console.log('Provider state:', provider);
+      
+      // Encode the addresses with debugging
+      console.log('Step 2: Current slots state:', this.slots);
+      const addresses = this.getAddresses();
+      console.log('Step 3: Addresses to encode:', addresses);
+      
       const { keys, values } = this.encodeAddresses();
+      console.log('Step 4: Encoded data:', { keys, values });
       
       if (keys.length === 0 || values.length === 0) {
         throw new Error('No data to encode');
       }
-
-      console.log('Encoded data to send:', { keys, values });
       
-      // Create a transaction to update the ERC725 data
+      // Create function data with detailed logging
+      let functionSelector, encodedParams, data;
+      try {
+        // Function selector for setData(bytes32[],bytes[])
+        functionSelector = '0x14a6c251';
+        
+        // Encode parameters
+        encodedParams = ethers.utils.defaultAbiCoder.encode(
+          ['bytes32[]', 'bytes[]'], 
+          [keys, values]
+        );
+        
+        // Full data payload
+        data = ethers.utils.hexConcat([functionSelector, encodedParams]);
+        
+        console.log('Step 5: Transaction data parts:', {
+          functionSelector,
+          encodedParamsLength: encodedParams.length,
+          fullDataLength: data.length
+        });
+      } catch (encodeError: unknown) {
+        console.error('Error during data encoding:', encodeError);
+        const errorMessage = encodeError instanceof Error ? encodeError.message : String(encodeError);
+        throw new Error(`Data encoding failed: ${errorMessage}`);
+      }
+      
+      // Create and log the transaction object
       const transaction = {
         from: address,
         to: address, // UP is both the sender and receiver
-        data: ethers.utils.hexConcat([
-          // Function selector for setData(bytes32[],bytes[])
-          '0x14a6c251', 
-          // Encode parameters
-          ethers.utils.defaultAbiCoder.encode(
-            ['bytes32[]', 'bytes[]'], 
-            [keys, values]
-          )
-        ]),
-        // Don't need to specify gas limit, UP provider handles this
+        data: data
       };
+      console.log('Step 6: Final transaction object:', transaction);
       
-      // Send the transaction through the UP provider
-      const txHash = await provider.request({
-        method: 'eth_sendTransaction',
-        params: [transaction]
-      });
-      
-      console.log('Transaction submitted:', txHash);
-      return txHash as string;
+      // Attempt to send the transaction
+      console.log('Step 7: Sending transaction...');
+      let txHash;
+      try {
+        txHash = await provider.request({
+          method: 'eth_sendTransaction',
+          params: [transaction]
+        });
+        console.log('Step 8: Transaction sent successfully with hash:', txHash);
+        return txHash as string;
+      } catch (sendError: unknown) {
+        console.error('Failed at eth_sendTransaction stage:', sendError);
+        // Check for specific provider errors
+        const error = sendError as { code?: number };
+        if (error.code === 4001) {
+          throw new Error('Transaction rejected by user');
+        } else if (error.code === -32602) {
+          throw new Error('Invalid transaction parameters');
+        } else {
+          throw sendError; // Re-throw with original error
+        }
+      }
     } catch (error) {
-      console.error('Error storing addresses:', error);
+      console.error('Error in storeAddressesOnProfile:', error);
       throw error;
     }
   }
@@ -269,6 +307,49 @@ export class LuksoTopAccountsManager implements TopAccountsManager {
     } catch (error) {
       console.error('Error retrieving top accounts:', error);
       return [];
+    }
+  }
+
+  // Add this test function to your class
+  testEncoding(): boolean {
+    try {
+      console.log('Testing encoding with current slots:', this.slots);
+      
+      // Get non-empty addresses 
+      const addresses = this.getAddresses();
+      if (addresses.length === 0) {
+        console.log('No addresses to encode');
+        return false;
+      }
+      console.log('Addresses for test encoding:', addresses);
+      
+      // Create ERC725 instance with proper schema
+      const erc725js = new ERC725(ERC725_CONFIG.TOP_ACCOUNTS_SCHEMA);
+      
+      // Encode using the pattern
+      const encoded = erc725js.encodeData([
+        { keyName: 'MyTopAccounts', value: addresses }
+      ]);
+      
+      console.log('Test encoding result:', encoded);
+      console.log('Keys length:', encoded.keys.length);
+      console.log('Values length:', encoded.values.length);
+      
+      // Test abi encoding
+      const functionSelector = '0x14a6c251';
+      const encodedParams = ethers.utils.defaultAbiCoder.encode(
+        ['bytes32[]', 'bytes[]'], 
+        [encoded.keys, encoded.values]
+      );
+      const data = ethers.utils.hexConcat([functionSelector, encodedParams]);
+      
+      console.log('Test transaction data:', data);
+      console.log('Data length:', ethers.utils.hexDataLength(data));
+      
+      return encoded.keys.length > 0 && encoded.values.length > 0;
+    } catch (error) {
+      console.error('Test encoding failed:', error);
+      return false;
     }
   }
 }
