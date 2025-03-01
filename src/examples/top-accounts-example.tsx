@@ -43,7 +43,7 @@ const TopAccountsExample: React.FC = () => {
     if (profileConnected && contextAccounts.length > 0) {
       try {
         // Use the provider from UPProvider instead of hardcoded values
-        const txHash = await manager.storeAddressesOnProfile(provider);
+        const txHash = await manager.storeAddressesOnProfile(provider, contextAccounts[0]);
         console.log('Transaction hash:', txHash);
       } catch (error) {
         console.error('Failed to store addresses on blockchain:', error);
