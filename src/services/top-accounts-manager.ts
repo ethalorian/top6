@@ -565,4 +565,33 @@ export class LuksoTopAccountsManager implements TopAccountsManager {
       return false;
     }
   }
+
+  /**
+   * Check if the account can update top accounts (has necessary permissions)
+   * @param provider The UP provider
+   * @param upAddress The Universal Profile address
+   * @param accountAddress Address to check permissions for
+   * @returns True if account can update top accounts
+   */
+  async canUpdateTopAccounts(
+    provider: ReturnType<typeof createClientUPProvider>,
+    upAddress: string,
+    accountAddress: string
+  ): Promise<boolean> {
+    try {
+      console.log('Checking if account can update top accounts:', accountAddress);
+      const hasPermission = await this.checkPermission(provider, upAddress, accountAddress);
+      
+      if (hasPermission) {
+        console.log('Account has permission to update top accounts');
+        return true;
+      } else {
+        console.log('Account does not have permission to update top accounts');
+        return false;
+      }
+    } catch (error) {
+      console.error('Error checking top accounts permissions:', error);
+      return false;
+    }
+  }
 }

@@ -46,17 +46,17 @@ function TopAccountsManager() {
     }
     
     try {
-      setStatusMessage('Checking and setting necessary permissions...');
+      setStatusMessage('Checking permissions...');
       
-      // First try to set permissions if needed
-      const permissionsSet = await manager.setRequiredPermissions(
+      // Check if account can update top accounts
+      const canUpdate = await manager.canUpdateTopAccounts(
         provider, 
         contextAccounts[0], 
         contextAccounts[0]
       );
       
-      if (!permissionsSet) {
-        setStatusMessage('Could not set permissions. Please set them manually in your Universal Profile interface.');
+      if (!canUpdate) {
+        setStatusMessage('Your account doesn\'t have permission to update Top Accounts. Please set SETDATA permission in your Universal Profile interface.');
         return;
       }
       
@@ -69,16 +69,7 @@ function TopAccountsManager() {
         Hash: ${txHash.substring(0, 10)}...${txHash.substring(txHash.length - 8)}`);
     } catch (error) {
       console.error('Error saving to blockchain:', error);
-      
-      // Use type assertion with interface instead of 'any'
-      const ethError = error as { code?: number; message?: string };
-      
-      // Check for user rejection (code 4001)
-      if (ethError.code === 4001) {
-        setStatusMessage('Transaction was rejected in your wallet. Please try again and approve the transaction.');
-      } else {
-        setStatusMessage(`Error: ${ethError.message || 'Unknown error occurred'}`);
-      }
+      setStatusMessage(`Error: ${error instanceof Error ? error.message : 'Unknown error occurred'}`);
     }
   };
 
