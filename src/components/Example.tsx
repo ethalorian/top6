@@ -1,11 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { LuksoTopAccountsManager } from '../services/top-accounts-manager';
+import { useUPProvider } from '../providers/up-provider';
 
 function TopAccountsManager() {
   const [manager, setManager] = useState<LuksoTopAccountsManager | null>(null);
   const [newAddress, setNewAddress] = useState('');
   const [selectedSlot, setSelectedSlot] = useState<number>(0);
   const [statusMessage, setStatusMessage] = useState('');
+  const { provider, contextAccounts, profileConnected } = useUPProvider();
 
   // Initialize the manager
   useEffect(() => {
@@ -37,14 +39,16 @@ function TopAccountsManager() {
   };
 
   const handleSaveToBlockchain = async () => {
-    if (!manager) return;
+    if (!manager || !profileConnected || contextAccounts.length === 0) {
+      setStatusMessage('Please connect your Universal Profile first');
+      return;
+    }
     
     try {
       setStatusMessage('Saving to blockchain...');
-      const privateKey = 'your-private-key'; // In a real app, get this securely
-      const rpcUrl = 'https://rpc.lukso.network';
       
-      const txHash = await manager.storeAddressesOnProfile(privateKey, rpcUrl);
+      // Use the UPProvider and the connected account
+      const txHash = await manager.storeAddressesOnProfile(provider, contextAccounts[0]);
       setStatusMessage(`Saved to blockchain. Transaction: ${txHash}`);
     } catch (error) {
       setStatusMessage(`Error saving to blockchain: ${error instanceof Error ? error.message : String(error)}`);
@@ -54,6 +58,12 @@ function TopAccountsManager() {
   return (
     <div>
       <h2>Top Accounts Manager</h2>
+      
+      {!profileConnected && (
+        <div className="connect-message">
+          Please connect your Universal Profile to use this feature
+        </div>
+      )}
       
       <div>
         <h3>Add New Address</h3>
@@ -91,7 +101,12 @@ function TopAccountsManager() {
         </ul>
       </div>
       
-      <button onClick={handleSaveToBlockchain}>Save to Blockchain</button>
+      <button 
+        onClick={handleSaveToBlockchain}
+        disabled={!profileConnected}
+      >
+        Save to Blockchain
+      </button>
       
       {statusMessage && (
         <div className="status-message">{statusMessage}</div>
