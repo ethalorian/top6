@@ -1,4 +1,5 @@
 import { ERC725JSONSchema } from '@erc725/erc725.js';
+import { createClientUPProvider } from '@lukso/up-provider';
 
 /**
  * Interface for managing top accounts on a LUKSO Universal Profile
@@ -9,7 +10,10 @@ export interface TopAccountsManager {
   removeAddress(address: string): boolean;
   getAddresses(): string[];
   encodeAddresses(): EncodedData;
-  storeAddressesOnProfile(privateKey: string, rpcUrl: string): Promise<string>;
+  storeAddressesOnProfile(
+    providerOrPrivateKey: ReturnType<typeof createClientUPProvider> | string,
+    addressOrRpcUrl: string
+  ): Promise<string>;
 }
 
 /**

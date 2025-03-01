@@ -3,6 +3,7 @@ import { ethers } from 'ethers';
 import { TopAccountsManager, EncodedData } from '../types/lukso';
 import { ERC725_CONFIG, MAX_TOP_ACCOUNTS } from '../constants/lukso';
 import { isValidAddress, normalizeAddress } from '../utils/addressUtils';
+import { createClientUPProvider } from '../providers/up-provider';
 
 /**
  * Class to manage top accounts for a LUKSO Universal Profile
@@ -169,7 +170,10 @@ export class LuksoTopAccountsManager implements TopAccountsManager {
    * @param address The address of the Universal Profile
    * @returns Transaction hash
    */
-  async storeAddressesOnProfile(provider: any, address: string): Promise<string> {
+  async storeAddressesOnProfile(
+    provider: ReturnType<typeof createClientUPProvider>, 
+    address: string
+  ): Promise<string> {
     if (!provider || !address) {
       throw new Error('Provider and address are required');
     }
