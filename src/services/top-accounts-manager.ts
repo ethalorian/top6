@@ -189,24 +189,47 @@ export class LuksoTopAccountsManager implements TopAccountsManager {
       
       console.log('Encoded data to send:', { keys, values });
       
-      // Use the LSP6 interface for the setData call
-      // This properly formats the transaction for Universal Profiles
-      const txHash = await provider.request({
-        method: 'eth_sendTransaction',
-        params: [{
-          from: address,
-          to: address,
-          data: ethers.utils.hexConcat([
-            '0x14a6c251', // Function selector for setData(bytes32[],bytes[])
-            ethers.utils.defaultAbiCoder.encode(['bytes32[]', 'bytes[]'], [keys, values])
-          ]),
-          // Add gas estimation safety factor
-          gas: ethers.utils.hexValue(300000), // Provide adequate gas
-        }]
-      });
+      // Prepare transaction data
+      const functionSelector = '0x14a6c251'; // setData(bytes32[],bytes[])
+      const encodedParams = ethers.utils.defaultAbiCoder.encode(
+        ['bytes32[]', 'bytes[]'], 
+        [keys, values]
+      );
       
-      console.log('Transaction submitted:', txHash);
-      return txHash;
+      const data = ethers.utils.hexConcat([functionSelector, encodedParams]);
+      
+      // Send transaction with retry logic
+      let attempts = 0;
+      const maxAttempts = 3;
+      
+      while (attempts < maxAttempts) {
+        try {
+          const txHash = await provider.request({
+            method: 'eth_sendTransaction',
+            params: [{
+              from: address,
+              to: address,
+              data: data,
+              gas: ethers.utils.hexValue(500000), // Increased gas limit for safety
+            }]
+          });
+          
+          console.log('Transaction submitted successfully:', txHash);
+          return txHash as string;
+        } catch (error) {
+          attempts++;
+          console.error(`Transaction attempt ${attempts} failed:`, error);
+          
+          if (attempts >= maxAttempts) {
+            throw error;
+          }
+          
+          // Wait before retrying
+          await new Promise(resolve => setTimeout(resolve, 1000));
+        }
+      }
+      
+      throw new Error('Failed to submit transaction after multiple attempts');
     } catch (error) {
       console.error('Error storing addresses:', error);
       throw error;
