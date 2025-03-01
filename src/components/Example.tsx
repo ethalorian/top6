@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { LuksoTopAccountsManager } from '../services/top-accounts-manager';
 import { useUPProvider } from '../providers/up-provider';
+import { MAX_TOP_ACCOUNTS } from '../constants/lukso';
 
 function TopAccountsManager() {
   const [manager, setManager] = useState<LuksoTopAccountsManager | null>(null);
@@ -87,7 +88,7 @@ function TopAccountsManager() {
       <div>
         <h3>Current Addresses</h3>
         <ul>
-          {Array.from({ length: 10 }).map((_, index) => {
+          {Array.from({ length: MAX_TOP_ACCOUNTS }).map((_, index) => {
             const address = manager?.getAddressAtSlot(index);
             return (
               <li key={index}>
