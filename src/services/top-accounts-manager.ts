@@ -189,46 +189,32 @@ export class LuksoTopAccountsManager implements TopAccountsManager {
 
       console.log('Encoded data to send:', { keys, values });
       
-      // IMPORTANT: The Universal Profile extension handles the KeyManager routing automatically
-      // We just need to make sure to use the extension's provider and the execute method
+      // Create a transaction to update the ERC725 data
+      const transaction = {
+        from: address,
+        to: address, // UP is both the sender and receiver
+        data: ethers.utils.hexConcat([
+          // Function selector for setData(bytes32[],bytes[])
+          '0x14a6c251', 
+          // Encode parameters
+          ethers.utils.defaultAbiCoder.encode(
+            ['bytes32[]', 'bytes[]'], 
+            [keys, values]
+          )
+        ]),
+        // Don't need to specify gas limit, UP provider handles this
+      };
       
-      // Encode the setData call for the execute function
-      const setDataCalldata = ethers.utils.hexConcat([
-        // Function selector for setData(bytes32[],bytes[])
-        '0x14a6c251', 
-        // Encode parameters
-        ethers.utils.defaultAbiCoder.encode(
-          ['bytes32[]', 'bytes[]'], 
-          [keys, values]
-        )
-      ]);
-      
-      // Use the extension's provider - it will route through the KeyManager
+      // Send the transaction through the UP provider
       const txHash = await provider.request({
         method: 'eth_sendTransaction',
-        params: [{
-          from: address,
-          to: address,
-          data: setDataCalldata,
-          gas: ethers.utils.hexValue(1000000)
-        }]
+        params: [transaction]
       });
       
       console.log('Transaction submitted:', txHash);
       return txHash as string;
     } catch (error) {
-      // More detailed error logging
-      const errorObj = error as { code?: number; message?: string; data?: string };
-      console.error('Detailed error:', {
-        message: errorObj.message || 'Unknown error',
-        code: errorObj.code,
-        data: errorObj.data
-      });
-      
-      if (errorObj.code === -32603 && errorObj.message?.includes('reverted')) {
-        throw new Error('Transaction reverted - Your account doesn\'t have permission to modify this Universal Profile. Please use the UP browser extension to grant necessary permissions.');
-      }
-      
+      console.error('Error storing addresses:', error);
       throw error;
     }
   }

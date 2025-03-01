@@ -50,6 +50,7 @@ function TopAccountsManager() {
       
       // Use the UPProvider and the connected account
       const txHash = await manager.storeAddressesOnProfile(provider, contextAccounts[0]);
+      
       setStatusMessage(`Transaction submitted successfully! 
         Hash: ${txHash.substring(0, 10)}...${txHash.substring(txHash.length - 8)}`);
     } catch (error) {
