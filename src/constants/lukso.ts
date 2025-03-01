@@ -4,13 +4,13 @@ import { ERC725SchemaConfig } from '../types/lukso';
  * ERC725 schema configuration for Universal Profile top accounts
  */
 export const ERC725_CONFIG: ERC725SchemaConfig = {
-  TOP_ACCOUNTS_KEY: '0x19465d1fa6b15b330296b08997725c2c11937b3291cd13455901acc35602d8f9',
+  TOP_ACCOUNTS_KEY: '0x38a0b0a149d59d46ad9c7fa612f0972948f82cc6f052268ef13a9e7da8a1dc84',
   TOP_ACCOUNTS_SCHEMA: [
     {
       name: 'MyTopAccounts',
-      key: '0x19465d1fa6b15b330296b08997725c2c11937b3291cd13455901acc35602d8f9',
-      keyType: 'Array',
-      valueType: 'address',
+      key: '0x38a0b0a149d59d46ad9c7fa612f0972948f82cc6f052268ef13a9e7da8a1dc84',
+      keyType: 'Singleton',
+      valueType: 'address[]',
       valueContent: 'Address'
     }
   ]
