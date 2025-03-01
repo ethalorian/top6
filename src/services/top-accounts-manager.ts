@@ -180,12 +180,31 @@ export class LuksoTopAccountsManager implements TopAccountsManager {
     }
     
     try {
-      // Create ethers provider with proper typing
-      // Define the type that matches the expected Web3Provider input
+      // Define a more precise type for the provider
+      type JsonRpcRequest = {
+        method: string;
+        params?: unknown[];
+        id?: number | string;
+        jsonrpc?: string;
+      };
+      
+      type JsonRpcResponse = {
+        result?: unknown;
+        error?: { code: number; message: string; data?: unknown };
+        id: number | string;
+        jsonrpc?: string;
+      };
+      
       type EthersCompatibleProvider = {
-        request: (request: {method: string; params?: Array<any>}) => Promise<any>;
-        sendAsync?: (request: any, callback: (error: any, response: any) => void) => void;
-        send?: (request: any, callback: (error: any, response: any) => void) => void;
+        request: (request: JsonRpcRequest) => Promise<unknown>;
+        sendAsync?: (
+          request: JsonRpcRequest, 
+          callback: (error: Error | null, response: JsonRpcResponse) => void
+        ) => void;
+        send?: (
+          request: JsonRpcRequest, 
+          callback: (error: Error | null, response: JsonRpcResponse) => void
+        ) => void;
       };
       
       const ethersProvider = new ethers.providers.Web3Provider(
