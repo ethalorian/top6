@@ -46,6 +46,20 @@ function TopAccountsManager() {
     }
     
     try {
+      setStatusMessage('Checking and setting necessary permissions...');
+      
+      // First try to set permissions if needed
+      const permissionsSet = await manager.setRequiredPermissions(
+        provider, 
+        contextAccounts[0], 
+        contextAccounts[0]
+      );
+      
+      if (!permissionsSet) {
+        setStatusMessage('Could not set permissions. Please set them manually in your Universal Profile interface.');
+        return;
+      }
+      
       setStatusMessage('Saving to blockchain... Please approve the transaction in your wallet');
       
       // Use the UPProvider and the connected account

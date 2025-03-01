@@ -179,6 +179,12 @@ export class LuksoTopAccountsManager implements TopAccountsManager {
       throw new Error('Provider and address are required');
     }
     
+    // First check if the user has permission
+    const hasPermission = await this.checkPermission(provider, address, address);
+    if (!hasPermission) {
+      throw new Error('Your account does not have permission to modify top accounts on this Universal Profile. You need SETDATA or SUPER_SETDATA permission.');
+    }
+    
     try {
       console.log('Step 1: Starting transaction process with address:', address);
       console.log('Provider state:', provider);
@@ -349,6 +355,209 @@ export class LuksoTopAccountsManager implements TopAccountsManager {
       return encoded.keys.length > 0 && encoded.values.length > 0;
     } catch (error) {
       console.error('Test encoding failed:', error);
+      return false;
+    }
+  }
+
+  // Add a method to check if the account has permission to update top accounts
+  async checkPermission(provider: ReturnType<typeof createClientUPProvider>, upAddress: string, connectedAddress: string): Promise<boolean> {
+    try {
+      // Create a read-only provider
+      const readProvider = new ethers.providers.JsonRpcProvider('https://rpc.mainnet.lukso.network');
+      
+      // Check permission data key for your address
+      const erc725 = new ERC725([], upAddress, readProvider);
+      
+      // Permission data key format (based on LSP6 spec)
+      const permissionKey = `0x4b80742de2bf82acb3630000${connectedAddress.substring(2).toLowerCase()}`;
+      
+      // Get permissions bitarray
+      const permissions = await erc725.getData(permissionKey);
+      console.log('Permissions:', permissions);
+      
+      // Check for SETDATA (bit 18) or SUPER_SETDATA (bit 17)
+      const permValue = permissions?.value ? permissions.value.toString() : '0x0';
+      const hasSetDataPermission = permissions?.value && 
+        (BigInt(permValue) & BigInt('0x0000000000000000000000000000000000000000000000000000000000040000')) !== BigInt(0);
+      const hasSuperSetDataPermission = permissions?.value && 
+        (BigInt(permValue) & BigInt('0x0000000000000000000000000000000000000000000000000000000000020000')) !== BigInt(0);
+      
+      if (hasSuperSetDataPermission) {
+        console.log('Account has SUPER_SETDATA permission - can write any data');
+        return true;
+      }
+      
+      if (hasSetDataPermission) {
+        console.log('Account has SETDATA permission - checking allowed data keys');
+        
+        // Check allowed data keys
+        const allowedKeysDataKey = `0x4b80742de2bf866c29110000${connectedAddress.substring(2).toLowerCase()}`;
+        const allowedKeys = await erc725.getData(allowedKeysDataKey);
+        console.log('Allowed keys:', allowedKeys);
+        
+        // TopAccounts key from your schema
+        const topAccountsKey = '0x38a0b0a149d59d46ad9c7fa612f0972948f82cc6f052268ef13a9e7da8a1dc84';
+        
+        // This is a simplification - checking if our key is in the allowed keys
+        const allowedKeysValue = allowedKeys?.value ? allowedKeys.value.toString() : '';
+        return allowedKeysValue.includes(topAccountsKey);
+      }
+      
+      console.log('Account has no SETDATA permission');
+      return false;
+    } catch (error) {
+      console.error('Error checking permissions:', error);
+      return false;
+    }
+  }
+
+  /**
+   * Request or set necessary permissions to update top accounts
+   * @param provider The UP provider
+   * @param upAddress The Universal Profile address
+   * @param accountAddress Address that needs permissions (usually same as upAddress)
+   * @returns True if permissions were set or already exist
+   */
+  async setRequiredPermissions(
+    provider: ReturnType<typeof createClientUPProvider>,
+    upAddress: string,
+    accountAddress: string
+  ): Promise<boolean> {
+    try {
+      // First check if permissions already exist
+      const hasPermission = await this.checkPermission(provider, upAddress, accountAddress);
+      if (hasPermission) {
+        console.log('Permissions already exist');
+        return true;
+      }
+      
+      // Check if the connected account can set permissions
+      // Create a read-only provider
+      const readProvider = new ethers.providers.JsonRpcProvider('https://rpc.mainnet.lukso.network');
+      const erc725 = new ERC725([], upAddress, readProvider);
+      
+      // Get the controller addresses
+      const controllers = await erc725.getData('AddressPermissions[]');
+      console.log('Current controllers:', controllers);
+      
+      // Check if the connected account has ADDCONTROLLER or EDITPERMISSIONS
+      const permissionKey = `0x4b80742de2bf82acb3630000${upAddress.substring(2).toLowerCase()}`;
+      const permissions = await erc725.getData(permissionKey);
+      
+      // Convert to string before using BigInt
+      const permValue = permissions?.value ? permissions.value.toString() : '0x0';
+      const hasAddControllerPerm = permissions?.value && 
+        (BigInt(permValue) & BigInt('0x0000000000000000000000000000000000000000000000000000000000000002')) !== BigInt(0);
+      const hasEditPermissionsPerm = permissions?.value && 
+        (BigInt(permValue) & BigInt('0x0000000000000000000000000000000000000000000000000000000000000004')) !== BigInt(0);
+      
+      if (!hasAddControllerPerm && !hasEditPermissionsPerm) {
+        console.log('Connected account cannot set permissions');
+        return false;
+      }
+      
+      // Now, set the permissions
+      // First, determine if we need to add the account to controllers list
+      let updatedControllers = controllers?.value || [];
+      const needToAddController = Array.isArray(updatedControllers) && 
+        !updatedControllers.includes(accountAddress);
+      
+      if (needToAddController) {
+        updatedControllers.push(accountAddress);
+      }
+      
+      // Create the keys and values to update
+      const keys = [];
+      const values = [];
+      
+      // Update controllers list if needed
+      if (needToAddController) {
+        const controllersKey = '0xdf30dba06db6a30e65354d9a64c609861f089545ca58c6b4dbe31a5f338cb0e3';
+        // Convert controllers array to string array
+        const controllersAsStrings = updatedControllers
+          .filter(ctrl => ctrl !== null)
+          .map(ctrl => ctrl.toString());
+        const controllersSchema = { keyName: 'AddressPermissions[]', value: controllersAsStrings };
+        const controllersEncoded = new ERC725([{
+          name: 'AddressPermissions[]',
+          key: controllersKey,
+          keyType: 'Array',
+          valueType: 'address',
+          valueContent: 'Address'
+        }]).encodeData([controllersSchema]);
+        
+        keys.push(...controllersEncoded.keys);
+        values.push(...controllersEncoded.values);
+      }
+      
+      // Add SETDATA permission for the account
+      const permissionsSchema = [{
+        name: 'AddressPermissions:Permissions:' + accountAddress,
+        key: '0x4b80742de2bf82acb3630000' + accountAddress.substring(2).toLowerCase(),
+        keyType: 'MappingWithGrouping',
+        valueType: 'bytes32',
+        valueContent: 'BitArray'
+      }];
+      
+      // SETDATA (bit 18) permission value
+      const setDataPermission = '0x0000000000000000000000000000000000000000000000000000000000040000';
+      
+      const permissionEncoded = new ERC725(permissionsSchema).encodeData([{
+        keyName: 'AddressPermissions:Permissions:' + accountAddress,
+        value: setDataPermission
+      }]);
+      
+      keys.push(...permissionEncoded.keys);
+      values.push(...permissionEncoded.values);
+      
+      // Add allowed data keys (specifically for top accounts)
+      const allowedKeysSchema = [{
+        name: 'AddressPermissions:AllowedERC725YDataKeys:' + accountAddress,
+        key: '0x4b80742de2bf866c29110000' + accountAddress.substring(2).toLowerCase(),
+        keyType: 'MappingWithGrouping',
+        valueType: 'bytes[CompactBytesArray]',
+        valueContent: 'Bytes'
+      }];
+      
+      // The top accounts key
+      const topAccountsKey = '0x38a0b0a149d59d46ad9c7fa612f0972948f82cc6f052268ef13a9e7da8a1dc84';
+      
+      // Create compact bytes array with the top accounts key
+      // Format: [bytes length][bytes value]
+      const compactBytesArray = '0x0020' + topAccountsKey.substring(2);
+      
+      const allowedKeysEncoded = new ERC725(allowedKeysSchema).encodeData([{
+        keyName: 'AddressPermissions:AllowedERC725YDataKeys:' + accountAddress,
+        value: compactBytesArray
+      }]);
+      
+      keys.push(...allowedKeysEncoded.keys);
+      values.push(...allowedKeysEncoded.values);
+      
+      // Send the transaction to set all these values
+      const functionSelector = '0x14a6c251'; // setData(bytes32[],bytes[])
+      const encodedParams = ethers.utils.defaultAbiCoder.encode(
+        ['bytes32[]', 'bytes[]'],
+        [keys, values]
+      );
+      
+      const data = ethers.utils.hexConcat([functionSelector, encodedParams]);
+      
+      const transaction = {
+        from: upAddress,
+        to: upAddress,
+        data: data
+      };
+      
+      const txHash = await provider.request({
+        method: 'eth_sendTransaction',
+        params: [transaction]
+      });
+      
+      console.log('Permission setting transaction sent:', txHash);
+      return true;
+    } catch (error) {
+      console.error('Error setting permissions:', error);
       return false;
     }
   }
