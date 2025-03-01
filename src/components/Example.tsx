@@ -1,10 +1,8 @@
-
 import React, { useState, useEffect } from 'react';
 import { LuksoTopAccountsManager } from '../services/top-accounts-manager';
 
 function TopAccountsManager() {
   const [manager, setManager] = useState<LuksoTopAccountsManager | null>(null);
-  const [addresses, setAddresses] = useState<string[]>([]);
   const [newAddress, setNewAddress] = useState('');
   const [selectedSlot, setSelectedSlot] = useState<number>(0);
   const [statusMessage, setStatusMessage] = useState('');
@@ -13,7 +11,6 @@ function TopAccountsManager() {
   useEffect(() => {
     const topAccountsManager = new LuksoTopAccountsManager();
     setManager(topAccountsManager);
-    setAddresses(topAccountsManager.getAddresses());
   }, []);
 
   const handleAddAddress = () => {
@@ -21,7 +18,6 @@ function TopAccountsManager() {
     
     const success = manager.addAddress(newAddress, selectedSlot);
     if (success) {
-      setAddresses(manager.getAddresses());
       setNewAddress('');
       setStatusMessage(`Address added to slot ${selectedSlot}`);
     } else {
@@ -34,7 +30,6 @@ function TopAccountsManager() {
     
     const success = manager.removeAddress(addressOrSlot);
     if (success) {
-      setAddresses(manager.getAddresses());
       setStatusMessage('Address removed successfully');
     } else {
       setStatusMessage('Failed to remove address');

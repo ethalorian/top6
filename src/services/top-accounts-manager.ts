@@ -3,7 +3,6 @@ import { ethers } from 'ethers';
 import { TopAccountsManager, EncodedData } from '../types/lukso';
 import { ERC725_CONFIG, MAX_TOP_ACCOUNTS } from '../constants/lukso';
 import { isValidAddress, normalizeAddress } from '../utils/addressUtils';
-import { createClientUPProvider } from '../providers/up-provider';
 
 /**
  * Class to manage top accounts for a LUKSO Universal Profile
@@ -181,16 +180,20 @@ export class LuksoTopAccountsManager implements TopAccountsManager {
     // Get the address
     const address = await signer.getAddress();
     
-    // Encode the addresses
+    // Encode the addresses and actually use the keys and values
     const { keys, values } = this.encodeAddresses();
     
-    // Create the transaction
+    // Create the transaction with the actual encoded data
     const transaction = {
-      to: address, // instead of provider.address
-      data: '0x...', // The encoded data to update the Universal Profile with keys and values
+      to: address,
+      // Use the keys and values in the transaction data
+      data: ethers.utils.hexConcat([
+        '0x14a6c251', // Function selector for setData(bytes32[],bytes[])
+        ethers.utils.defaultAbiCoder.encode(['bytes32[]', 'bytes[]'], [keys, values])
+      ])
     };
     
-    // For the transaction
+    // Send the transaction
     const txResponse = await signer.sendTransaction(transaction);
     return txResponse.hash;
   }
