@@ -456,16 +456,19 @@ export class LuksoTopAccountsManager implements TopAccountsManager {
         return false;
       }
       
-      // Now, set the permissions
       // First, determine if we need to add the account to controllers list
       const updatedControllers = controllers?.value || [];
       const needToAddController = Array.isArray(updatedControllers) && 
         !updatedControllers.includes(accountAddress);
       
-      let controllersToUpdate = Array.isArray(updatedControllers) ? [...updatedControllers] : [];
-      if (needToAddController) {
-        controllersToUpdate.push(accountAddress);
-      }
+      // Initialize with conditional logic to avoid reassignment
+      const controllersToUpdate = Array.isArray(updatedControllers) 
+        ? needToAddController 
+          ? [...updatedControllers, accountAddress] 
+          : [...updatedControllers]
+        : needToAddController 
+          ? [accountAddress] 
+          : [];
       
       // Create the keys and values to update
       const keys = [];
