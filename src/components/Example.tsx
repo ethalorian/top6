@@ -52,14 +52,17 @@ function TopAccountsManager() {
       const txHash = await manager.storeAddressesOnProfile(provider, contextAccounts[0]);
       setStatusMessage(`Transaction submitted successfully! 
         Hash: ${txHash.substring(0, 10)}...${txHash.substring(txHash.length - 8)}`);
-    } catch (error: any) {
+    } catch (error) {
       console.error('Error saving to blockchain:', error);
       
+      // Use type assertion with interface instead of 'any'
+      const ethError = error as { code?: number; message?: string };
+      
       // Check for user rejection (code 4001)
-      if (error.code === 4001) {
+      if (ethError.code === 4001) {
         setStatusMessage('Transaction was rejected in your wallet. Please try again and approve the transaction.');
       } else {
-        setStatusMessage(`Error: ${error.message || 'Unknown error occurred'}`);
+        setStatusMessage(`Error: ${ethError.message || 'Unknown error occurred'}`);
       }
     }
   };
