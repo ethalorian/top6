@@ -1,4 +1,3 @@
-
 import { ERC725SchemaConfig } from '../types/lukso';
 
 /**
@@ -10,10 +9,10 @@ export const ERC725_CONFIG: ERC725SchemaConfig = {
     {
       name: 'MyTopAccounts',
       key: '0x38a0b0a149d59d46ad9c7fa612f0972948f82cc6f052268ef13a9e7da8a1dc84',
-      keyType: 'Singleton',
-      valueType: 'address[]',
-      valueContent: 'Address',
-    },
+      keyType: 'Array',
+      valueType: 'address',
+      valueContent: 'Address'
+    }
   ]
 };
 

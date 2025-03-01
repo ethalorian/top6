@@ -1,5 +1,5 @@
 'use client';
-
+import TopAccountsManager from "@/components/Example";
 import { useUPProvider } from "@/providers/up-provider";
 
 export default function Home() {
@@ -13,9 +13,11 @@ export default function Home() {
         <p>Debug Info:</p>
         <p>Accounts Length: {accounts.length}</p>
         <p>Context Accounts Length: {contextAccounts.length}</p>
+        <TopAccountsManager></TopAccountsManager>
       </div>
       {profileConnected && accounts[0] && <p>Account: {accounts[0]}</p>}
       {profileConnected && contextAccounts[0] && <p>Context Account: {contextAccounts[0]}</p>}
     </div>
+
   );
 }

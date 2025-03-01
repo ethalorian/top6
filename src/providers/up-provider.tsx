@@ -85,3 +85,6 @@ export function useUPProvider() {
   }
   return context;
 }
+
+// Re-export the function
+export { createClientUPProvider };
