@@ -46,13 +46,21 @@ function TopAccountsManager() {
     }
     
     try {
-      setStatusMessage('Saving to blockchain...');
+      setStatusMessage('Saving to blockchain... Please approve the transaction in your wallet');
       
       // Use the UPProvider and the connected account
       const txHash = await manager.storeAddressesOnProfile(provider, contextAccounts[0]);
-      setStatusMessage(`Saved to blockchain. Transaction: ${txHash}`);
-    } catch (error) {
-      setStatusMessage(`Error saving to blockchain: ${error instanceof Error ? error.message : String(error)}`);
+      setStatusMessage(`Transaction submitted successfully! 
+        Hash: ${txHash.substring(0, 10)}...${txHash.substring(txHash.length - 8)}`);
+    } catch (error: any) {
+      console.error('Error saving to blockchain:', error);
+      
+      // Check for user rejection (code 4001)
+      if (error.code === 4001) {
+        setStatusMessage('Transaction was rejected in your wallet. Please try again and approve the transaction.');
+      } else {
+        setStatusMessage(`Error: ${error.message || 'Unknown error occurred'}`);
+      }
     }
   };
 
