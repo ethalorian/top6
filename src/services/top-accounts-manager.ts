@@ -611,14 +611,13 @@ export class LuksoTopAccountsManager implements TopAccountsManager {
       
       // Create a read-only provider
       const readProvider = new ethers.providers.JsonRpcProvider('https://rpc.mainnet.lukso.network');
-      const erc725 = new ERC725([], upAddress, readProvider);
       
-      // Check for owner status or permissions
-      const ownerKey = '0x0000000000000000000000000000000000000000000000000000000000000000';
-      const ownerData = await erc725.getData(ownerKey);
-      const ownerAddress = ownerData?.value?.toString().toLowerCase();
+      // Check for owner directly using contract call instead of ERC725
+      const ownerIsConnected = await this.isOwnerOfProfile(readProvider, upAddress);
+      console.log('Is owner connected:', ownerIsConnected);
       
       // Get permission key for connected address
+      const erc725 = new ERC725([], upAddress, readProvider);
       const permissionKey = `0x4b80742de2bf82acb3630000${upAddress.substring(2).toLowerCase()}`;
       const permissions = await erc725.getData(permissionKey);
       const permValue = permissions?.value ? permissions.value.toString() : '0x0';
@@ -627,11 +626,10 @@ export class LuksoTopAccountsManager implements TopAccountsManager {
       const hasSuperSetDataPermission = permissions?.value && 
         (BigInt(permValue) & BigInt('0x0000000000000000000000000000000000000000000000000000000000020000')) !== BigInt(0);
         
-      const isOwnerOrHasSuperPerm = 
-        (ownerAddress === upAddress.toLowerCase()) || hasSuperSetDataPermission;
+      const isOwnerOrHasSuperPerm = ownerIsConnected || hasSuperSetDataPermission;
       
       console.log('Account status:', { 
-        isOwner: ownerAddress === upAddress.toLowerCase(),
+        isOwner: ownerIsConnected,
         hasSuperSetData: hasSuperSetDataPermission
       });
       
@@ -698,6 +696,26 @@ export class LuksoTopAccountsManager implements TopAccountsManager {
     } catch (error) {
       console.error('Error in setup and store process:', error);
       throw error;
+    }
+  }
+
+  // Add this helper method to check owner status using ethers directly
+  async isOwnerOfProfile(provider: ethers.providers.JsonRpcProvider, profileAddress: string): Promise<boolean> {
+    try {
+      // Universal Profile interface ABI (just the owner function)
+      const upAbi = ["function owner() view returns (address)"];
+      
+      // Create contract instance
+      const contract = new ethers.Contract(profileAddress, upAbi, provider);
+      
+      // Get owner address
+      const owner = await contract.owner();
+      
+      // Compare with the profile address (UP controller and address are the same in common setups)
+      return owner.toLowerCase() === profileAddress.toLowerCase();
+    } catch (error) {
+      console.error('Error checking owner:', error);
+      return false;
     }
   }
 }
