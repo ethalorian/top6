@@ -180,8 +180,17 @@ export class LuksoTopAccountsManager implements TopAccountsManager {
     }
     
     try {
-      // Create ethers provider that uses the UP provider
-      const ethersProvider = new ethers.providers.Web3Provider(provider as any);
+      // Create ethers provider with proper typing
+      // Define the type that matches the expected Web3Provider input
+      type EthersCompatibleProvider = {
+        request: (request: {method: string; params?: Array<any>}) => Promise<any>;
+        sendAsync?: (request: any, callback: (error: any, response: any) => void) => void;
+        send?: (request: any, callback: (error: any, response: any) => void) => void;
+      };
+      
+      const ethersProvider = new ethers.providers.Web3Provider(
+        provider as unknown as EthersCompatibleProvider
+      );
       
       // Create an interface to your existing Universal Profile
       const universalProfile = new ethers.Contract(
