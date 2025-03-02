@@ -1,3 +1,4 @@
+'use client'
 
 import { useUPProvider } from "@/providers/up-provider";
 
@@ -16,6 +17,5 @@ export default function Home() {
       {profileConnected && accounts[0] && <p>Account: {accounts[0]}</p>}
       {profileConnected && contextAccounts[0] && <p>Context Account: {contextAccounts[0]}</p>}
     </div>
-
   );
 }
