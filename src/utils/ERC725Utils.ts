@@ -34,8 +34,20 @@ export function encodeMetadata(
 ): { keys: string[]; values: string[] } {
   const erc725js = new ERC725(schema);
   
+  // Process value for ERC725.js compatibility
+  let processedValue: string | string[] | number | boolean;
+  
+  if (value === null) {
+    processedValue = '';
+  } else if (typeof value === 'object' && !Array.isArray(value)) {
+    // Convert object to JSON string
+    processedValue = JSON.stringify(value);
+  } else {
+    processedValue = value as string | string[] | number | boolean;
+  }
+  
   const encodedData = erc725js.encodeData([
-    { keyName: schemaName, value },
+    { keyName: schemaName, value: processedValue },
   ]);
   
   return encodedData;
