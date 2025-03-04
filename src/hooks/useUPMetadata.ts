@@ -27,8 +27,8 @@ export interface MetadataAction {
 // Define provider type more accurately
 type UPProvider = ethers.providers.ExternalProvider & {
   request: (args: { method: string; params?: unknown[] }) => Promise<unknown>;
-  on: (event: string, listener: (...args: any[]) => void) => void;
-  removeListener: (event: string, listener: (...args: any[]) => void) => void;
+  on: (event: string, listener: (...args: unknown[]) => void) => void;
+  removeListener: (event: string, listener: (...args: unknown[]) => void) => void;
 };
 
 /**
