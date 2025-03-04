@@ -200,6 +200,24 @@ export function useUPMetadata() {
           console.error('Second decoding attempt failed:', secondError);
         }
         
+        // Add direct extraction as last fallback
+        // This looks specifically for Ethereum addresses in the response
+        if (rawResult && rawResult.length > 42) {
+          const pattern = /0{24}([0-9a-fA-F]{40})/g;
+          const matches = [...rawResult.matchAll(pattern)];
+          
+          if (matches.length > 0) {
+            const addresses = matches.map(match => `0x${match[1]}`);
+            console.log('Extracted addresses via pattern:', addresses);
+            
+            return {
+              name: keyOrName,
+              key: key,
+              value: addresses,
+            };
+          }
+        }
+        
         // Add a default return if all decoding attempts fail
         return {
           name: keyOrName,
