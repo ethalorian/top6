@@ -24,9 +24,11 @@ export interface MetadataAction {
   txHash: string | null;
 }
 
-// Define provider type
+// Define provider type more accurately
 type UPProvider = ethers.providers.ExternalProvider & {
   request: (args: { method: string; params?: unknown[] }) => Promise<unknown>;
+  on: (event: string, listener: (...args: any[]) => void) => void;
+  removeListener: (event: string, listener: (...args: any[]) => void) => void;
 };
 
 /**
@@ -112,21 +114,55 @@ export function useUPMetadata() {
         web3Provider
       );
       
-      // Get data from the Universal Profile
-      const value = await universalProfile.getData(key);
-      
-      // Decode the data
-      const erc725js = new ERC725(schema);
-      const decodedData = erc725js.decodeData([
-        { keyName: key, value }
-      ]);
-      
-      setState({ loading: false, error: null, txHash: null });
-      return decodedData[0];
+      try {
+        // Get data from the Universal Profile
+        const value = await universalProfile.getData(key);
+        
+        // Decode the data
+        const erc725js = new ERC725(schema);
+        const decodedData = erc725js.decodeData([
+          { keyName: key, value }
+        ]);
+        
+        // Ensure we have a result
+        if (!decodedData || decodedData.length === 0) {
+          throw new Error('Failed to decode data');
+        }
+        
+        setState({ loading: false, error: null, txHash: null });
+        return decodedData[0];
+      } catch (contractError) {
+        console.error('Contract call error:', contractError);
+        
+        // Try with a lower-level call if the standard method fails
+        const callData = universalProfile.interface.encodeFunctionData('getData', [key]);
+        const result = await web3Provider.call({
+          to: profileAddress,
+          data: callData
+        });
+        
+        const decodedResult = universalProfile.interface.decodeFunctionResult('getData', result);
+        const value = decodedResult[0];
+        
+        const erc725js = new ERC725(schema);
+        const decodedData = erc725js.decodeData([
+          { keyName: key, value }
+        ]);
+        
+        setState({ loading: false, error: null, txHash: null });
+        return decodedData[0];
+      }
     } catch (error: unknown) {
+      console.error('Error retrieving metadata:', error);
       const errorMessage = error instanceof Error ? error.message : 'Unknown error';
       setState({ loading: false, error: errorMessage, txHash: null });
-      throw error;
+      
+      // Return a fallback decoded data object in case of error
+      return {
+        name: keyOrName,
+        key: keyOrName.startsWith('0x') ? keyOrName : getKeyByName(keyOrName) || keyOrName,
+        value: [] as string[],
+      };
     }
   };
   
