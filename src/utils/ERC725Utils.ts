@@ -14,7 +14,7 @@ export const schema: ERC725JSONSchema[] = [
 ];
 
 // Define the ERC725Value type
-export type ERC725Value = string | string[] | number | boolean | Record<string, unknown>;
+export type ERC725Value = string | string[] | number | boolean | Record<string, unknown> | null;
 
 export type DecodedData = {
   name: string;
