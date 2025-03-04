@@ -1,6 +1,7 @@
 'use client'
 
 import { useUPProvider } from "@/providers/up-provider";
+import { MetadataManager } from "@/components/MetadataManager";
 
 export default function Home() {
   const { accounts, contextAccounts, profileConnected } = useUPProvider();
@@ -16,6 +17,12 @@ export default function Home() {
       </div>
       {profileConnected && accounts[0] && <p>Account: {accounts[0]}</p>}
       {profileConnected && contextAccounts[0] && <p>Context Account: {contextAccounts[0]}</p>}
+
+      <MetadataManager 
+          title="Manage Your Top Accounts" 
+          schemaName="MyTopAccounts" 
+          maxAddresses={6} 
+        />
     </div>
   );
 }
