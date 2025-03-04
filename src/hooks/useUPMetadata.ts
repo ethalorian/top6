@@ -24,11 +24,14 @@ interface ProviderRpcRequest {
   params?: unknown[];
 }
 
+// Define event listener types
+type ProviderEventListener = (...args: unknown[]) => void;
+
 // Define provider type
 type UPProvider = {
   request: (args: ProviderRpcRequest) => Promise<unknown>;
-  on: (event: string, listener: (...args: any[]) => void) => void;
-  removeListener: (event: string, listener: (...args: any[]) => void) => void;
+  on: (event: string, listener: ProviderEventListener) => void;
+  removeListener: (event: string, listener: ProviderEventListener) => void;
 };
 
 export interface MetadataAction {
@@ -66,7 +69,7 @@ export function useUPMetadata() {
       const encodedData = encodeMetadata(schemaName, value);
       
       // Create a Web3Provider from the UP Provider
-      const web3Provider = new ethers.providers.Web3Provider(provider as any);
+      const web3Provider = new ethers.providers.Web3Provider(provider as UPProvider);
       
       // Get the signer from the connected account
       const signer = web3Provider.getSigner(accounts[0]);
@@ -103,11 +106,6 @@ export function useUPMetadata() {
     data: string
   ): Promise<string> => {
     try {
-      // Get the current network
-      const networkResponse = await (provider as UPProvider).request({
-        method: 'eth_chainId',
-      });
-      
       // Make a direct eth_call using the provider
       const response = await (provider as UPProvider).request({
         method: 'eth_call',
