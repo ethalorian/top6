@@ -92,10 +92,14 @@ export const MetadataManager: React.FC<MetadataManagerProps> = ({
     try {
       const result = await retrieveMyMetadata(schemaName);
       if (result && result.value) {
-        setSavedAddresses(result.value);
+        // Ensure result.value is treated as a string array
+        const addresses = Array.isArray(result.value) 
+          ? result.value.filter(item => typeof item === 'string')
+          : [];
+        setSavedAddresses(addresses);
         
-        // Update the input fields
-        const newAddresses = result.value.map((addr: string) => ({
+        // Update the input fields with the verified string array
+        const newAddresses = addresses.map((addr: string) => ({
           value: addr,
           valid: validateAddress(addr)
         }));
