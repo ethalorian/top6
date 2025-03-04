@@ -18,18 +18,24 @@ import { useState } from 'react';
 // Extract the ABI from the imported JSON
 const LSP0ERC725AccountABI = LSP0ERC725Account.abi;
 
+// Interface for provider request methods
+interface ProviderRpcRequest {
+  method: string;
+  params?: unknown[];
+}
+
+// Define provider type
+type UPProvider = {
+  request: (args: ProviderRpcRequest) => Promise<unknown>;
+  on: (event: string, listener: (...args: any[]) => void) => void;
+  removeListener: (event: string, listener: (...args: any[]) => void) => void;
+};
+
 export interface MetadataAction {
   loading: boolean;
   error: string | null;
   txHash: string | null;
 }
-
-// Define provider type more accurately
-type UPProvider = ethers.providers.ExternalProvider & {
-  request: (args: { method: string; params?: unknown[] }) => Promise<unknown>;
-  on: (event: string, listener: (...args: unknown[]) => void) => void;
-  removeListener: (event: string, listener: (...args: unknown[]) => void) => void;
-};
 
 /**
  * React hook for interacting with UP metadata
@@ -60,7 +66,7 @@ export function useUPMetadata() {
       const encodedData = encodeMetadata(schemaName, value);
       
       // Create a Web3Provider from the UP Provider
-      const web3Provider = new ethers.providers.Web3Provider(provider as UPProvider);
+      const web3Provider = new ethers.providers.Web3Provider(provider as any);
       
       // Get the signer from the connected account
       const signer = web3Provider.getSigner(accounts[0]);
@@ -90,6 +96,43 @@ export function useUPMetadata() {
   };
   
   /**
+   * Make a direct call to the blockchain using the provider's raw request method
+   */
+  const callContractData = async (
+    address: string,
+    data: string
+  ): Promise<string> => {
+    try {
+      // Get the current network
+      const networkResponse = await (provider as UPProvider).request({
+        method: 'eth_chainId',
+      });
+      
+      // Make a direct eth_call using the provider
+      const response = await (provider as UPProvider).request({
+        method: 'eth_call',
+        params: [
+          {
+            to: address,
+            data: data,
+          },
+          'latest'
+        ],
+      });
+      
+      // Check if response is a string (as expected)
+      if (typeof response === 'string') {
+        return response;
+      }
+      
+      throw new Error('Unexpected response format from provider');
+    } catch (error) {
+      console.error('Error in raw call:', error);
+      throw error;
+    }
+  };
+  
+  /**
    * Retrieve metadata from any Universal Profile
    */
   const retrieveMetadataFromProfile = async (
@@ -104,53 +147,73 @@ export function useUPMetadata() {
         ? keyOrName 
         : getKeyByName(keyOrName) || keyOrName;
       
-      // Create a Web3Provider from the UP Provider
-      const web3Provider = new ethers.providers.Web3Provider(provider as UPProvider);
+      // Create the function data for getData(bytes32)
+      const functionSignature = '0x54f6127f'; // keccak256("getData(bytes32)") first 4 bytes
+      const paddedKey = key.replace('0x', '').padStart(64, '0');
+      const callData = `${functionSignature}${paddedKey}`;
       
-      // Create contract instance
-      const universalProfile = new ethers.Contract(
-        profileAddress,
-        LSP0ERC725AccountABI,
-        web3Provider
-      );
+      // Directly call the contract using the provider
+      const rawResult = await callContractData(profileAddress, callData);
       
+      // Log the raw result for debugging
+      console.log('Raw result from contract call:', rawResult);
+      
+      // Parse the returned data - this is a direct byte array from the contract
+      // We don't need to use ethers.js to decode it
+      
+      // Decode using ERC725
+      const erc725js = new ERC725(schema);
       try {
-        // Get data from the Universal Profile
-        const value = await universalProfile.getData(key);
-        
-        // Decode the data
-        const erc725js = new ERC725(schema);
         const decodedData = erc725js.decodeData([
-          { keyName: key, value }
+          { keyName: key, value: rawResult }
         ]);
         
-        // Ensure we have a result
-        if (!decodedData || decodedData.length === 0) {
-          throw new Error('Failed to decode data');
+        setState({ loading: false, error: null, txHash: null });
+        return decodedData[0];
+      } catch (decodeError) {
+        console.error('Error decoding ERC725 data:', decodeError);
+        console.log('Failed to decode:', { key, rawResult });
+        
+        // Try an alternative approach - the data might be an address array
+        if (rawResult.length > 66) {
+          try {
+            // Basic decoding for address arrays
+            // Skip the first 64 chars (32 bytes) which are typically array length data
+            const dataWithoutHeader = '0x' + rawResult.slice(66);
+            
+            // Try to extract addresses (each address is 20 bytes = 40 chars + '0x' prefix)
+            const addresses: string[] = [];
+            for (let i = 0; i < dataWithoutHeader.length; i += 64) {
+              if (i + 64 <= dataWithoutHeader.length) {
+                const addressData = dataWithoutHeader.slice(i, i + 64);
+                // Last 40 chars = 20 bytes = address
+                const address = '0x' + addressData.slice(24);
+                if (/^0x[0-9a-fA-F]{40}$/.test(address)) {
+                  addresses.push(address);
+                }
+              }
+            }
+            
+            if (addresses.length > 0) {
+              setState({ loading: false, error: null, txHash: null });
+              return {
+                name: keyOrName,
+                key: key,
+                value: addresses
+              };
+            }
+          } catch (e) {
+            console.error('Alternative decoding failed:', e);
+          }
         }
         
-        setState({ loading: false, error: null, txHash: null });
-        return decodedData[0];
-      } catch (contractError) {
-        console.error('Contract call error:', contractError);
-        
-        // Try with a lower-level call if the standard method fails
-        const callData = universalProfile.interface.encodeFunctionData('getData', [key]);
-        const result = await web3Provider.call({
-          to: profileAddress,
-          data: callData
-        });
-        
-        const decodedResult = universalProfile.interface.decodeFunctionResult('getData', result);
-        const value = decodedResult[0];
-        
-        const erc725js = new ERC725(schema);
-        const decodedData = erc725js.decodeData([
-          { keyName: key, value }
-        ]);
-        
-        setState({ loading: false, error: null, txHash: null });
-        return decodedData[0];
+        // Return a fallback if all decoding fails
+        setState({ loading: false, error: 'Failed to decode data format', txHash: null });
+        return {
+          name: keyOrName,
+          key: key,
+          value: rawResult
+        };
       }
     } catch (error: unknown) {
       console.error('Error retrieving metadata:', error);
