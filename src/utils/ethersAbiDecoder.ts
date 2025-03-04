@@ -41,7 +41,7 @@ export function encodeAddressArray(addresses: string[]): string {
  * @param valueType The ERC725Y valueType string
  * @returns The decoded value
  */
-export function decodeERC725YValue(data: string, valueType: string): any {
+export function decodeERC725YValue(data: string, valueType: string): string | string[] | number | boolean | Record<string, unknown> | null {
   try {
     // Convert ERC725Y valueType to ethers ABI type
     // This mapping is not exhaustive and may need to be expanded
@@ -86,7 +86,7 @@ export function decodeERC725YValue(data: string, valueType: string): any {
  * @param valueType The ERC725Y valueType string
  * @returns The ABI-encoded data
  */
-export function encodeERC725YValue(value: any, valueType: string): string {
+export function encodeERC725YValue(value: string | string[] | number | boolean | Record<string, unknown>, valueType: string): string {
   try {
     // Convert ERC725Y valueType to ethers ABI type (same mapping as above)
     const abiTypeMap: Record<string, string> = {
