@@ -5,7 +5,14 @@ import { ethers } from 'ethers';
 import LSP0ERC725Account from '@lukso/lsp-smart-contracts/artifacts/LSP0ERC725Account.json';
 import { ERC725 } from '@erc725/erc725.js';
 import { useUPProvider } from '../providers/up-provider'; // Path to your provider
-import { encodeMetadata, decodeMetadata, schema, getKeyByName } from '../utils/ERC725Utils';
+import { 
+  encodeMetadata, 
+  decodeMetadata, 
+  schema, 
+  getKeyByName,
+  ERC725Value,
+  DecodedData
+} from '../utils/ERC725Utils';
 import { useState } from 'react';
 
 // Extract the ABI from the imported JSON
@@ -16,6 +23,11 @@ export interface MetadataAction {
   error: string | null;
   txHash: string | null;
 }
+
+// Define provider type
+type UPProvider = ethers.providers.ExternalProvider & {
+  request: (args: { method: string; params?: unknown[] }) => Promise<unknown>;
+};
 
 /**
  * React hook for interacting with UP metadata
@@ -33,7 +45,7 @@ export function useUPMetadata() {
    */
   const storeMetadataOnProfile = async (
     schemaName: string,
-    value: any
+    value: ERC725Value
   ): Promise<string> => {
     if (!profileConnected || accounts.length === 0) {
       throw new Error('No Universal Profile connected');
@@ -46,7 +58,7 @@ export function useUPMetadata() {
       const encodedData = encodeMetadata(schemaName, value);
       
       // Create a Web3Provider from the UP Provider
-      const web3Provider = new ethers.providers.Web3Provider(provider as any);
+      const web3Provider = new ethers.providers.Web3Provider(provider as UPProvider);
       
       // Get the signer from the connected account
       const signer = web3Provider.getSigner(accounts[0]);
@@ -68,8 +80,9 @@ export function useUPMetadata() {
       
       setState({ loading: false, error: null, txHash: tx.hash });
       return tx.hash;
-    } catch (error: any) {
-      setState({ loading: false, error: error.message || 'Unknown error', txHash: null });
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      setState({ loading: false, error: errorMessage, txHash: null });
       throw error;
     }
   };
@@ -80,7 +93,7 @@ export function useUPMetadata() {
   const retrieveMetadataFromProfile = async (
     profileAddress: string,
     keyOrName: string
-  ): Promise<any> => {
+  ): Promise<DecodedData> => {
     setState({ loading: true, error: null, txHash: null });
     
     try {
@@ -90,7 +103,7 @@ export function useUPMetadata() {
         : getKeyByName(keyOrName) || keyOrName;
       
       // Create a Web3Provider from the UP Provider
-      const web3Provider = new ethers.providers.Web3Provider(provider as any);
+      const web3Provider = new ethers.providers.Web3Provider(provider as UPProvider);
       
       // Create contract instance
       const universalProfile = new ethers.Contract(
@@ -109,9 +122,10 @@ export function useUPMetadata() {
       ]);
       
       setState({ loading: false, error: null, txHash: null });
-      return decodedData;
-    } catch (error: any) {
-      setState({ loading: false, error: error.message || 'Unknown error', txHash: null });
+      return decodedData[0];
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      setState({ loading: false, error: errorMessage, txHash: null });
       throw error;
     }
   };
@@ -119,7 +133,7 @@ export function useUPMetadata() {
   /**
    * Retrieve metadata from the connected Universal Profile
    */
-  const retrieveMyMetadata = async (keyOrName: string): Promise<any> => {
+  const retrieveMyMetadata = async (keyOrName: string): Promise<DecodedData> => {
     if (!profileConnected || accounts.length === 0) {
       throw new Error('No Universal Profile connected');
     }

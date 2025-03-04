@@ -1,6 +1,23 @@
 // ERC725Utils.ts - Core encoding/decoding functionality
-// Note: This file does not use the deprecated @lukso/lsp-factory.js library
 import { ERC725, ERC725JSONSchema } from '@erc725/erc725.js';
+
+// Define possible value types for ERC725 metadata
+export type ERC725Value = 
+  | string 
+  | string[] 
+  | number 
+  | number[] 
+  | boolean 
+  | boolean[] 
+  | Record<string, unknown>;
+
+// Define the return type for decoded data
+export interface DecodedData {
+  name: string;
+  key: string;
+  value: ERC725Value;
+  type?: string;
+}
 
 // Define your ERC725 schema - this is what defines the metadata structure
 export const schema: ERC725JSONSchema[] = [
@@ -21,7 +38,7 @@ export const schema: ERC725JSONSchema[] = [
  */
 export function encodeMetadata(
   schemaName: string,
-  value: any
+  value: ERC725Value
 ): { keys: string[]; values: string[] } {
   const erc725js = new ERC725(schema);
   
@@ -41,14 +58,14 @@ export function encodeMetadata(
 export function decodeMetadata(
   keys: string[],
   values: string[]
-): any {
+): DecodedData {
   const erc725js = new ERC725(schema);
   
   const decodedData = erc725js.decodeData([
     { keyName: keys[0], value: values[0] }
   ]);
   
-  return decodedData;
+  return decodedData[0];
 }
 
 /**
