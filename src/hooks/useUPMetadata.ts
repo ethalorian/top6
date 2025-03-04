@@ -126,7 +126,7 @@ export function useUPMetadata() {
         return '0x'; // Return empty hex for null/undefined responses
       } else if (typeof response === 'object') {
         // Some providers wrap the result
-        const result = (response as any).result;
+        const result = (response as Record<string, unknown>).result;
         if (typeof result === 'string') {
           return result;
         }
