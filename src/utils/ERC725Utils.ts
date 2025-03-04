@@ -43,7 +43,12 @@ export function encodeMetadata(
   const erc725js = new ERC725(schema);
   
   const encodedData = erc725js.encodeData([
-    { keyName: schemaName, value },
+    { 
+      keyName: schemaName, 
+      value: Array.isArray(value) 
+        ? value.map(v => String(v)) 
+        : [String(value)] 
+    },
   ]);
   
   return encodedData;
