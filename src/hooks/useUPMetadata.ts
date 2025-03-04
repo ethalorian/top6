@@ -170,10 +170,14 @@ export function useUPMetadata() {
       // We don't need to use ethers.js to decode it
       
       // Decode using ERC725
-      const erc725js = new ERC725(schema);
       try {
+        // Create a new ERC725 instance with the schema
+        const erc725js = new ERC725(schema);
+        
+        // For address[] types, we need to use the correct format
+        // The data is already properly encoded, we just need to pass it correctly
         const decodedData = erc725js.decodeData([
-          { keyName: key, value: rawResult }
+          { keyName: keyOrName, value: rawResult }
         ]);
         
         setState({ loading: false, error: null, txHash: null });
@@ -182,45 +186,25 @@ export function useUPMetadata() {
         console.error('Error decoding ERC725 data:', decodeError);
         console.log('Failed to decode:', { key, rawResult });
         
-        // Try an alternative approach - the data might be an address array
-        if (rawResult.length > 66) {
-          try {
-            // Basic decoding for address arrays
-            // Skip the first 64 chars (32 bytes) which are typically array length data
-            const dataWithoutHeader = '0x' + rawResult.slice(66);
-            
-            // Try to extract addresses (each address is 20 bytes = 40 chars + '0x' prefix)
-            const addresses: string[] = [];
-            for (let i = 0; i < dataWithoutHeader.length; i += 64) {
-              if (i + 64 <= dataWithoutHeader.length) {
-                const addressData = dataWithoutHeader.slice(i, i + 64);
-                // Last 40 chars = 20 bytes = address
-                const address = '0x' + addressData.slice(24);
-                if (/^0x[0-9a-fA-F]{40}$/.test(address)) {
-                  addresses.push(address);
-                }
-              }
-            }
-            
-            if (addresses.length > 0) {
-              setState({ loading: false, error: null, txHash: null });
-              return {
-                name: keyOrName,
-                key: key,
-                value: addresses
-              };
-            }
-          } catch (e) {
-            console.error('Alternative decoding failed:', e);
-          }
+        // Fallback to simpler decoding
+        try {
+          // Use the ERC725 decodeData method with specific configuration
+          const erc725js = new ERC725(schema, {}, 'web3');
+          const decodedData = erc725js.decodeData([
+            { keyName: keyOrName, value: rawResult }
+          ]);
+          
+          setState({ loading: false, error: null, txHash: null });
+          return decodedData[0];
+        } catch (secondError) {
+          console.error('Second decoding attempt failed:', secondError);
         }
         
-        // Return a fallback if all decoding fails
-        setState({ loading: false, error: 'Failed to decode data format', txHash: null });
+        // Add a default return if all decoding attempts fail
         return {
           name: keyOrName,
-          key: key,
-          value: rawResult
+          key: keyOrName.startsWith('0x') ? keyOrName : getKeyByName(keyOrName) || keyOrName,
+          value: [],
         };
       }
     } catch (error: unknown) {
