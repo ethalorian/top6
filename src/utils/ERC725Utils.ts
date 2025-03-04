@@ -1,4 +1,5 @@
 // ERC725Utils.ts - Core encoding/decoding functionality
+// Note: This file does not use the deprecated @lukso/lsp-factory.js library
 import { ERC725, ERC725JSONSchema } from '@erc725/erc725.js';
 
 // Define your ERC725 schema - this is what defines the metadata structure

@@ -2,10 +2,14 @@
 'use client';
 
 import { ethers } from 'ethers';
-import { LSP0ERC725Account__factory } from '@lukso/lsp-smart-contracts';
-import { useUPProvider } from './UPProvider'; // Path to your provider
-import { encodeMetadata, decodeMetadata, schema, getKeyByName } from './ERC725Utils';
+import LSP0ERC725Account from '@lukso/lsp-smart-contracts/artifacts/LSP0ERC725Account.json';
+import { ERC725 } from '@erc725/erc725.js';
+import { useUPProvider } from '../providers/up-provider'; // Path to your provider
+import { encodeMetadata, decodeMetadata, schema, getKeyByName } from '../utils/ERC725Utils';
 import { useState } from 'react';
+
+// Extract the ABI from the imported JSON
+const LSP0ERC725AccountABI = LSP0ERC725Account.abi;
 
 export interface MetadataAction {
   loading: boolean;
@@ -48,8 +52,9 @@ export function useUPMetadata() {
       const signer = web3Provider.getSigner(accounts[0]);
       
       // Create contract instance - using the connected UP address
-      const universalProfile = LSP0ERC725Account__factory.connect(
+      const universalProfile = new ethers.Contract(
         accounts[0],
+        LSP0ERC725AccountABI,
         signer
       );
       
@@ -88,8 +93,9 @@ export function useUPMetadata() {
       const web3Provider = new ethers.providers.Web3Provider(provider as any);
       
       // Create contract instance
-      const universalProfile = LSP0ERC725Account__factory.connect(
+      const universalProfile = new ethers.Contract(
         profileAddress,
+        LSP0ERC725AccountABI,
         web3Provider
       );
       

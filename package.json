@@ -13,6 +13,7 @@
   },
   "dependencies": {
     "@erc725/erc725.js": "^0.27.2",
+    "@lukso/lsp-smart-contracts": "^0.16.2",
     "@lukso/up-provider": "^0.3.5",
     "ethers": "^5.8.0",
     "next": "15.2.0",
