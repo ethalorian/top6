@@ -118,11 +118,21 @@ export function useUPMetadata() {
         ],
       });
       
-      // Check if response is a string (as expected)
+      // Handle different response formats
       if (typeof response === 'string') {
         return response;
+      } else if (response === null) {
+        return '0x'; // Return empty hex for null responses
+      } else if (typeof response === 'object' && response !== null) {
+        // Try to extract string data from response object
+        const stringValue = JSON.stringify(response);
+        console.log('Provider returned object:', stringValue);
+        if ('result' in response && typeof response.result === 'string') {
+          return response.result;
+        }
       }
       
+      console.error('Unexpected provider response format:', response);
       throw new Error('Unexpected response format from provider');
     } catch (error) {
       console.error('Error in raw call:', error);
