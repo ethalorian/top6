@@ -13,6 +13,7 @@ import {
   ERC725Value,
   DecodedData
 } from '../utils/ERC725Utils';
+import { decodeERC725YValue } from '../utils/ethersAbiDecoder';
 import { useState } from 'react';
 
 // Extract the ABI from the imported JSON
@@ -118,21 +119,11 @@ export function useUPMetadata() {
         ],
       });
       
-      // Handle different response formats
+      // Check if response is a string (as expected)
       if (typeof response === 'string') {
         return response;
-      } else if (response === null) {
-        return '0x'; // Return empty hex for null responses
-      } else if (typeof response === 'object' && response !== null) {
-        // Try to extract string data from response object
-        const stringValue = JSON.stringify(response);
-        console.log('Provider returned object:', stringValue);
-        if ('result' in response && typeof response.result === 'string') {
-          return response.result;
-        }
       }
       
-      console.error('Unexpected provider response format:', response);
       throw new Error('Unexpected response format from provider');
     } catch (error) {
       console.error('Error in raw call:', error);
@@ -166,64 +157,80 @@ export function useUPMetadata() {
       // Log the raw result for debugging
       console.log('Raw result from contract call:', rawResult);
       
-      // Parse the returned data - this is a direct byte array from the contract
-      // We don't need to use ethers.js to decode it
-      
-      // Decode using ERC725
+      // First try to decode with ethers ABI decoder
       try {
-        // Create a new ERC725 instance with the schema
-        const erc725js = new ERC725(schema);
+        console.log('Trying to decode with ethers ABI decoder...');
+        // Get schema item to determine the valueType
+        const schemaItem = schema.find(item => item.key === key || item.name === keyOrName);
+        const valueType = schemaItem?.valueType || 'address[]'; // Default to address[] if schema not found
         
-        // For address[] types, we need to use the correct format
-        // The data is already properly encoded, we just need to pass it correctly
-        const decodedData = erc725js.decodeData([
-          { keyName: keyOrName, value: rawResult }
-        ]);
+        // Decode using ethers ABI decoder which handles the correct format
+        const decodedValue = decodeERC725YValue(rawResult, valueType);
+        console.log('Successfully decoded value:', decodedValue);
         
         setState({ loading: false, error: null, txHash: null });
-        return decodedData[0];
+        return {
+          name: keyOrName,
+          key: key,
+          value: decodedValue
+        };
       } catch (decodeError) {
-        console.error('Error decoding ERC725 data:', decodeError);
-        console.log('Failed to decode:', { key, rawResult });
+        console.error('Error decoding with ABI decoder:', decodeError);
         
-        // Fallback to simpler decoding
+        // As a fallback, try ERC725 decoder
         try {
-          // Use the ERC725 decodeData method with specific configuration
-          const erc725js = new ERC725(schema, {}, 'web3');
+          const erc725js = new ERC725(schema);
           const decodedData = erc725js.decodeData([
-            { keyName: keyOrName, value: rawResult }
+            { keyName: key, value: rawResult }
           ]);
           
           setState({ loading: false, error: null, txHash: null });
           return decodedData[0];
-        } catch (secondError) {
-          console.error('Second decoding attempt failed:', secondError);
-        }
-        
-        // Add direct extraction as last fallback
-        // This looks specifically for Ethereum addresses in the response
-        if (rawResult && rawResult.length > 42) {
-          const pattern = /0{24}([0-9a-fA-F]{40})/g;
-          const matches = [...rawResult.matchAll(pattern)];
+        } catch (erc725Error) {
+          console.error('Error decoding ERC725 data:', erc725Error);
+          console.log('Failed to decode:', { key, rawResult });
           
-          if (matches.length > 0) {
-            const addresses = matches.map(match => `0x${match[1]}`);
-            console.log('Extracted addresses via pattern:', addresses);
-            
-            return {
-              name: keyOrName,
-              key: key,
-              value: addresses,
-            };
+          // Try an alternative approach - the data might be an address array
+          if (rawResult.length > 66) {
+            try {
+              // Basic decoding for address arrays
+              // Skip the first 64 chars (32 bytes) which are typically array length data
+              const dataWithoutHeader = '0x' + rawResult.slice(66);
+              
+              // Try to extract addresses (each address is 20 bytes = 40 chars + '0x' prefix)
+              const addresses: string[] = [];
+              for (let i = 0; i < dataWithoutHeader.length; i += 64) {
+                if (i + 64 <= dataWithoutHeader.length) {
+                  const addressData = dataWithoutHeader.slice(i, i + 64);
+                  // Last 40 chars = 20 bytes = address
+                  const address = '0x' + addressData.slice(24);
+                  if (/^0x[0-9a-fA-F]{40}$/.test(address)) {
+                    addresses.push(address);
+                  }
+                }
+              }
+              
+              if (addresses.length > 0) {
+                setState({ loading: false, error: null, txHash: null });
+                return {
+                  name: keyOrName,
+                  key: key,
+                  value: addresses
+                };
+              }
+            } catch (e) {
+              console.error('Alternative decoding failed:', e);
+            }
           }
+          
+          // Return a fallback if all decoding fails
+          setState({ loading: false, error: 'Failed to decode data format', txHash: null });
+          return {
+            name: keyOrName,
+            key: key,
+            value: rawResult
+          };
         }
-        
-        // Add a default return if all decoding attempts fail
-        return {
-          name: keyOrName,
-          key: keyOrName.startsWith('0x') ? keyOrName : getKeyByName(keyOrName) || keyOrName,
-          value: [],
-        };
       }
     } catch (error: unknown) {
       console.error('Error retrieving metadata:', error);

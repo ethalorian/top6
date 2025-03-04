@@ -1,23 +1,7 @@
 // ERC725Utils.ts - Core encoding/decoding functionality
+// Note: This file implements the ERC725Y JSON Schema standard defined in LIP-2
 import { ERC725, ERC725JSONSchema } from '@erc725/erc725.js';
-
-// Define possible value types for ERC725 metadata
-export type ERC725Value = 
-  | string 
-  | string[] 
-  | number 
-  | number[] 
-  | boolean 
-  | boolean[] 
-  | Record<string, unknown>;
-
-// Define the return type for decoded data
-export interface DecodedData {
-  name: string;
-  key: string;
-  value: ERC725Value;
-  type?: string;
-}
+import { encodeERC725YValue } from './ethersAbiDecoder';
 
 // Define your ERC725 schema - this is what defines the metadata structure
 export const schema: ERC725JSONSchema[] = [
@@ -30,6 +14,15 @@ export const schema: ERC725JSONSchema[] = [
   },
 ];
 
+// Define the ERC725Value type
+export type ERC725Value = string | string[] | number | boolean | object;
+
+export type DecodedData = {
+  name: string;
+  key: string;
+  value: any;
+};
+
 /**
  * Encodes metadata according to ERC725 schema
  * @param schemaName Name of the schema element to encode
@@ -38,17 +31,12 @@ export const schema: ERC725JSONSchema[] = [
  */
 export function encodeMetadata(
   schemaName: string,
-  value: ERC725Value
+  value: any
 ): { keys: string[]; values: string[] } {
   const erc725js = new ERC725(schema);
   
   const encodedData = erc725js.encodeData([
-    { 
-      keyName: schemaName, 
-      value: Array.isArray(value) 
-        ? value.map(v => String(v)) 
-        : [String(value)] 
-    },
+    { keyName: schemaName, value },
   ]);
   
   return encodedData;
@@ -63,14 +51,14 @@ export function encodeMetadata(
 export function decodeMetadata(
   keys: string[],
   values: string[]
-): DecodedData {
+): any {
   const erc725js = new ERC725(schema);
   
   const decodedData = erc725js.decodeData([
     { keyName: keys[0], value: values[0] }
   ]);
   
-  return decodedData[0];
+  return decodedData;
 }
 
 /**
