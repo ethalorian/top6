@@ -15,7 +15,6 @@ import {
 } from '../utils/ERC725Utils';
 import { decodeERC725YValue } from '../utils/ethersAbiDecoder';
 import { useState } from 'react';
-import { sendDirectTransaction, encodeSetDataBatchData } from '../utils/directTransaction';
 
 // Extract the ABI from the imported JSON
 const LSP0ERC725AccountABI = LSP0ERC725Account.abi;
@@ -96,39 +95,10 @@ export function useUPMetadata() {
       
       console.log('Encoding metadata for:', schemaName, 'Value:', value);
       
-      // Use a try/catch specifically for the encoding step
-      let encodedData;
-      try {
-        encodedData = encodeMetadata(schemaName, value);
-        
-        if (!encodedData.keys || !encodedData.values || 
-            !encodedData.keys.length || !encodedData.values.length) {
-          throw new Error('Failed to encode metadata - empty result');
-        }
-        
-        // Ensure no values are undefined or null in our payload
-        if (encodedData.values.some(v => v === undefined || v === null)) {
-          throw new Error('Encoded values contain undefined or null');
-        }
-        
-        // Ensure every value is a proper hex string
-        encodedData.values = encodedData.values.map(v => {
-          if (typeof v !== 'string') {
-            throw new Error(`Value is not a string: ${typeof v}`);
-          }
-          // Ensure proper hex format
-          if (!v.startsWith('0x')) {
-            return `0x${v}`;
-          }
-          return v;
-        });
-        
-        console.log('Encoded data keys:', encodedData.keys);
-        console.log('Encoded data values:', encodedData.values);
-      } catch (encodeError) {
-        console.error('Encoding error:', encodeError);
-        throw new Error(`Failed to encode data: ${encodeError instanceof Error ? encodeError.message : 'Unknown error'}`);
-      }
+      const encodedData = encodeMetadata(schemaName, value);
+      
+      console.log('Encoded data keys:', encodedData.keys);
+      console.log('Encoded data values:', encodedData.values);
       
       try {
         // Create a Web3Provider from the UP Provider
@@ -144,22 +114,9 @@ export function useUPMetadata() {
           signer
         );
         
-        // Store data on the Universal Profile - with explicit checks
+        // Store data on the Universal Profile
         const keys = encodedData.keys;
         const values = encodedData.values;
-        
-        // Additional deep validation of values - no undefined allowed
-        for (let i = 0; i < values.length; i++) {
-          if (values[i] === undefined || values[i] === null) {
-            throw new Error(`Value at index ${i} is undefined or null`);
-          }
-          if (typeof values[i] !== 'string') {
-            throw new Error(`Value at index ${i} is not a string: ${typeof values[i]}`);
-          }
-          if (!values[i].startsWith('0x')) {
-            values[i] = `0x${values[i]}`;
-          }
-        }
         
         console.log('Sending transaction with:', {
           address: accounts[0],
@@ -167,37 +124,6 @@ export function useUPMetadata() {
           values: values
         });
         
-        // TRY DIRECT METHOD FIRST
-        try {
-          console.log('Trying direct transaction method...');
-          
-          // Use our direct transaction method
-          try {
-            // Manually encode the function call data for setDataBatch
-            const directTxData = encodeSetDataBatchData(keys, values);
-            
-            console.log('Direct transaction data created', directTxData);
-            
-            // Send transaction directly using window.ethereum
-            const txHash = await sendDirectTransaction(
-              accounts[0],  // to: UP contract address
-              directTxData, // data: Encoded function call
-              accounts[0]   // from: User's account
-            );
-            
-            console.log('Direct transaction successful:', txHash);
-            setState({ loading: false, error: null, txHash });
-            return txHash;
-          } catch (directError) {
-            console.error('Direct method failed, trying fallback:', directError);
-            // Continue to fallback method
-          }
-        } catch (directMethodError) {
-          console.error('Direct transaction approach failed:', directMethodError);
-          // Continue to fallback methods
-        }
-        
-        // FALLBACK: Try with ethers.js but catch BigInt errors
         try {
           const tx = await universalProfile.setDataBatch(
             keys,
@@ -214,12 +140,9 @@ export function useUPMetadata() {
           setState({ loading: false, error: null, txHash: tx.hash });
           return tx.hash;
         } catch (bigIntError) {
-          // Instead of trying to handle the BigInt error, we'll just log it
-          // and rely on our UI workaround since it's succeeding on-chain
-          console.error('Transaction sent but response processing failed:', bigIntError);
-          
           // If we got the specific BigInt error, assume success and return a placeholder
           if (String(bigIntError).includes('BigInt')) {
+            console.log('BigInt error encountered but transaction may have succeeded');
             setState({ loading: false, error: 'Transaction may have succeeded but response processing failed', txHash: 'unknown' });
             return 'unknown-hash';
           }
@@ -229,26 +152,13 @@ export function useUPMetadata() {
         }
       } catch (txError: unknown) {
         console.error('Transaction failed:', txError);
-        
-        const errorObj = txError as Error & {
-          reason?: string,
-          error?: { message?: string },
-          data?: { message?: string }
-        };
-        
-        const errorMessage = 
-          errorObj.reason || 
-          errorObj.error?.message || 
-          errorObj.data?.message || 
-          errorObj.message || 
-          'Unknown transaction error';
-                      
+        const errorMessage = txError instanceof Error ? txError.message : 'Unknown transaction error';
         setState({ loading: false, error: errorMessage, txHash: null });
-        throw new Error(`Transaction failed: ${errorMessage}`);
+        throw txError;
       }
     } catch (error: unknown) {
+      console.error('Failed to store metadata:', error);
       const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-      console.error('Error in storeMetadataOnProfile:', error);
       setState({ loading: false, error: errorMessage, txHash: null });
       throw error;
     }
