@@ -66,8 +66,18 @@ export function useUPMetadata() {
     setState({ loading: true, error: null, txHash: null });
     
     try {
+      // Validate value to avoid BigInt conversion issues
+      if (value === undefined) {
+        throw new Error('Cannot store undefined value');
+      }
+      
       // Encode the data
       const encodedData = encodeMetadata(schemaName, value);
+      
+      // Validate encoded data before sending to contract
+      if (!encodedData.keys.length || !encodedData.values.length) {
+        throw new Error('Failed to encode metadata');
+      }
       
       // Create a Web3Provider from the UP Provider
       const web3Provider = new ethers.providers.Web3Provider(provider as UPProvider);

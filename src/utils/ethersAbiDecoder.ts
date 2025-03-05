@@ -43,8 +43,40 @@ export function encodeAddressArray(addresses: string[]): string {
  */
 export function decodeERC725YValue(data: string, valueType: string): string | string[] | number | boolean | Record<string, unknown> | null {
   try {
-    // Convert ERC725Y valueType to ethers ABI type
-    // This mapping is not exhaustive and may need to be expanded
+    // Special handling for address[] which seems to have a different format
+    if (valueType === 'address[]') {
+      try {
+        // First try standard decoding
+        return ethers.utils.defaultAbiCoder.decode(['address[]'], data)[0];
+      } catch (e) {
+        console.log('Standard address[] decoding failed, trying custom approach');
+        
+        // LUKSO UP format often has a different structure
+        // Extract addresses directly from the raw data
+        const addresses: string[] = [];
+        
+        // Skip first 64 bytes (32 bytes for offset, 32 bytes for array length)
+        // Each address is 32 bytes (padded) after that
+        for (let i = 66 + 64; i < data.length; i += 64) {
+          if (i + 40 <= data.length) {
+            // Extract the address (20 bytes = 40 chars)
+            const address = '0x' + data.substring(i + 24, i + 64);
+            if (/^0x[0-9a-fA-F]{40}$/.test(address)) {
+              addresses.push(address);
+            }
+          }
+        }
+        
+        if (addresses.length > 0) {
+          return addresses;
+        }
+        
+        // Fall back to original method if no addresses found
+        throw e;
+      }
+    }
+    
+    // Handle other types as before
     const abiTypeMap: Record<string, string> = {
       'address': 'address',
       'address[]': 'address[]',
