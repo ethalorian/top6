@@ -214,7 +214,8 @@ export function decodeERC725YValue(data: string, valueType: string): string | st
       const baseType: string = valueType.slice(0, -2);
       const abiType: string = abiTypeMap[baseType] ? `${abiTypeMap[baseType]}[]` : valueType;
       const decoded: unknown = ethers.utils.defaultAbiCoder.decode([abiType], data)[0];
-      return decoded as string[] | number[] | boolean[];
+      // Restrict to string[] since our schema only uses address[]
+      return decoded as string[];
     }
     
     // Handle basic types
