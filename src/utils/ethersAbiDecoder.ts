@@ -47,7 +47,17 @@ export function decodeERC725YValue(data: string, valueType: string): string | st
     if (valueType === 'address[]') {
       try {
         // First try standard decoding
-        return ethers.utils.defaultAbiCoder.decode(['address[]'], data)[0];
+        const decoded = ethers.utils.defaultAbiCoder.decode(['address[]'], data)[0];
+        // Validate each address to ensure it's a proper Ethereum address
+        const validAddresses = decoded.filter((addr: string) => 
+          typeof addr === 'string' && /^0x[a-fA-F0-9]{40}$/.test(addr)
+        );
+        
+        if (validAddresses.length > 0) {
+          return validAddresses;
+        }
+        
+        throw new Error('No valid addresses found in standard decoding');
       } catch (e) {
         console.log('Standard address[] decoding failed, trying custom approach');
         
@@ -61,6 +71,7 @@ export function decodeERC725YValue(data: string, valueType: string): string | st
           if (i + 40 <= data.length) {
             // Extract the address (20 bytes = 40 chars)
             const address = '0x' + data.substring(i + 24, i + 64);
+            // Only include valid Ethereum addresses (40 hex chars after 0x)
             if (/^0x[0-9a-fA-F]{40}$/.test(address)) {
               addresses.push(address);
             }
@@ -69,6 +80,14 @@ export function decodeERC725YValue(data: string, valueType: string): string | st
         
         if (addresses.length > 0) {
           return addresses;
+        }
+        
+        // If all else fails, try a very strict extraction of just addresses
+        const addressRegex = /0x[0-9a-fA-F]{40}/g;
+        const matches = data.match(addressRegex);
+        
+        if (matches && matches.length > 0) {
+          return matches;
         }
         
         // Fall back to original method if no addresses found

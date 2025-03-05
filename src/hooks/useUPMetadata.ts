@@ -71,6 +71,16 @@ export function useUPMetadata() {
         throw new Error('Cannot store undefined value');
       }
       
+      // Ensure we have valid addresses for address arrays
+      if (Array.isArray(value)) {
+        value = value.filter(v => typeof v === 'string' && /^0x[a-fA-F0-9]{40}$/.test(v));
+        if (value.length === 0) {
+          throw new Error('No valid addresses provided');
+        }
+      }
+      
+      console.log('Encoding metadata for:', schemaName, value);
+      
       // Encode the data
       const encodedData = encodeMetadata(schemaName, value);
       
@@ -78,6 +88,8 @@ export function useUPMetadata() {
       if (!encodedData.keys.length || !encodedData.values.length) {
         throw new Error('Failed to encode metadata');
       }
+      
+      console.log('Encoded data:', encodedData.keys, encodedData.values);
       
       // Create a Web3Provider from the UP Provider
       const web3Provider = new ethers.providers.Web3Provider(provider as UPProvider);
@@ -92,18 +104,35 @@ export function useUPMetadata() {
         signer
       );
       
-      // Store data on the Universal Profile
-      const tx = await universalProfile.setDataBatch(
-        encodedData.keys,
-        encodedData.values
-      );
-      
-      await tx.wait();
-      
-      setState({ loading: false, error: null, txHash: tx.hash });
-      return tx.hash;
+      // Store data on the Universal Profile - with explicit error handling
+      try {
+        const tx = await universalProfile.setDataBatch(
+          encodedData.keys,
+          encodedData.values
+        );
+        
+        console.log('Transaction submitted:', tx);
+        const receipt = await tx.wait();
+        console.log('Transaction confirmed:', receipt);
+        
+        setState({ loading: false, error: null, txHash: tx.hash });
+        return tx.hash;
+      } catch (txError: any) {
+        console.error('Transaction failed:', txError);
+        
+        // Handle provider errors that might be nested
+        const errorMessage = txError.reason || 
+                            (txError.error?.message) || 
+                            (txError.data?.message) || 
+                            txError.message || 
+                            'Unknown transaction error';
+                            
+        setState({ loading: false, error: errorMessage, txHash: null });
+        throw new Error(`Transaction failed: ${errorMessage}`);
+      }
     } catch (error: unknown) {
       const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      console.error('Error in storeMetadataOnProfile:', error);
       setState({ loading: false, error: errorMessage, txHash: null });
       throw error;
     }
