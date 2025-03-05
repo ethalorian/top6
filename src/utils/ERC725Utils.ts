@@ -1,7 +1,7 @@
 // ERC725Utils.ts - Core encoding/decoding functionality
 // Note: This file implements the ERC725Y JSON Schema standard defined in LIP-2
 import { ERC725, ERC725JSONSchema } from '@erc725/erc725.js';
-import { encodeERC725YValue, decodeERC725YValue } from './ethersAbiDecoder';
+import { decodeERC725YValue } from './ethersAbiDecoder';
 
 // Define your ERC725 schema - this is what defines the metadata structure
 export const schema: ERC725JSONSchema[] = [
