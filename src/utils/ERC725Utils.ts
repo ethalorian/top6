@@ -35,78 +35,25 @@ export function encodeMetadata(
   schemaName: string,
   value: ERC725Value
 ): { keys: string[]; values: string[] } {
-  // Find the schema item for this name
-  const schemaItem = schema.find(item => item.name === schemaName);
+  const erc725js = new ERC725(schema);
   
-  if (!schemaItem) {
-    throw new Error(`Schema item "${schemaName}" not found`);
-  }
-  
-  // Process value for encoding safety
-  let processedValue: ERC725Value = value;
+  // Process value for ERC725.js compatibility
+  let processedValue: string | string[] | number | boolean;
   
   if (value === null) {
     processedValue = '';
   } else if (typeof value === 'object' && !Array.isArray(value)) {
-    // Convert complex objects to JSON strings
+    // Convert object to JSON string
     processedValue = JSON.stringify(value);
-  } else if (Array.isArray(value)) {
-    // Ensure arrays contain only valid values
-    processedValue = value.filter(v => v !== null && v !== undefined);
-    
-    // For address arrays, ensure they're properly formatted
-    if (schemaItem.valueType === 'address[]') {
-      processedValue = (processedValue as string[]).filter(
-        addr => typeof addr === 'string' && /^0x[a-fA-F0-9]{40}$/.test(addr)
-      );
-    }
+  } else {
+    processedValue = value as string | string[] | number | boolean;
   }
   
-  // For address arrays, use the ethers encoder which handles ABI encoding correctly
-  if (schemaItem.valueType === 'address[]' || 
-      (schemaItem.valueType.includes('[]') && schemaItem.valueContent === 'Address')) {
-    try {
-      // Use ethers ABI encoder for address arrays
-      const encodedValue = encodeERC725YValue(processedValue, schemaItem.valueType);
-      
-      return {
-        keys: [schemaItem.key],
-        values: [encodedValue]
-      };
-    } catch (error) {
-      console.error('Error encoding with ethers ABI:', error);
-      // Fall back to ERC725.js encoding
-    }
-  }
+  const encodedData = erc725js.encodeData([
+    { keyName: schemaName, value: processedValue },
+  ]);
   
-  // Standard ERC725.js encoding for other types
-  try {
-    const erc725js = new ERC725(schema);
-    const encodedData = erc725js.encodeData([
-      { keyName: schemaName, value: processedValue },
-    ]);
-    
-    return encodedData;
-  } catch (erc725Error) {
-    console.error('Error encoding with ERC725.js:', erc725Error);
-    
-    // Last resort fallback for address arrays
-    if (schemaItem.valueType === 'address[]' && Array.isArray(processedValue)) {
-      try {
-        // Manual ABI encoding using ethers
-        const encodedValue = encodeERC725YValue(processedValue, 'address[]');
-        return {
-          keys: [schemaItem.key],
-          values: [encodedValue]
-        };
-      } catch (ethersError) {
-        console.error('Final fallback encoding failed:', ethersError);
-        throw erc725Error; // Throw the original error if all else fails
-      }
-    }
-    
-    throw erc725Error;
-  }
+  return encodedData;
 }
 
 /**
