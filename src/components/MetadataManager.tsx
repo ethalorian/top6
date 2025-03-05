@@ -93,11 +93,16 @@ export const MetadataManager: React.FC<MetadataManagerProps> = ({
       
       console.log(`Updating address at index ${index} to ${address}`);
       
-      // Save the updated array - handle BigInt serialization issues
+      // Ensure all addresses are valid Ethereum addresses
+      const sanitizedAddresses = addressesToUpdate.map(addr => 
+        validateAddress(addr) ? addr : '0x0000000000000000000000000000000000000000'
+      );
+      
+      // Save the updated array
       try {
-        const txHash = await storeMetadataOnProfile(schemaName, addressesToUpdate);
+        const txHash = await storeMetadataOnProfile(schemaName, sanitizedAddresses);
         console.log('Save successful with hash:', txHash);
-        setSavedAddresses(addressesToUpdate);
+        setSavedAddresses(sanitizedAddresses);
         setIndexOperation({ index, status: 'success' });
         
         // Clear success status after 3 seconds
@@ -156,10 +161,15 @@ export const MetadataManager: React.FC<MetadataManagerProps> = ({
     setError(null);
     console.log('Saving addresses:', validAddresses);
     
-    storeMetadataOnProfile(schemaName, validAddresses)
+    // Ensure addresses are properly formatted to avoid BigInt conversion issues
+    const sanitizedAddresses = validAddresses.map(addr => 
+      validateAddress(addr) ? addr : '0x0000000000000000000000000000000000000000'
+    );
+    
+    storeMetadataOnProfile(schemaName, sanitizedAddresses)
       .then(txHash => {
         console.log('Save successful with hash:', txHash);
-        setSavedAddresses(validAddresses);
+        setSavedAddresses(sanitizedAddresses);
         setIsSaving(false);
       })
       .catch(err => {
