@@ -21,7 +21,7 @@ export function decodeAddressArray(data: string): string[] {
     
     // 2. Locate potential array length position
     // The array length is typically after several offsets
-    let lengthPos = 2 + (mainOffset * 2); // Start at the main offset
+    const lengthPos = 2 + (mainOffset * 2); // Start at the main offset
     
     // Look for array length marker by skipping potential nested offsets
     // Try to find the pattern where we have a small number (array length)
