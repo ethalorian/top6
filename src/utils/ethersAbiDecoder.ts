@@ -74,7 +74,7 @@ export function decodeERC725YValue(data: string, valueType: string): string | st
         }
         
         throw new Error('No valid addresses found in standard decoding');
-      } catch (e) {
+      } catch {
         console.log('Standard decoding failed, trying LUKSO specific format');
         
         // Based on the specific LUKSO format we're seeing:
