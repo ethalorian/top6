@@ -75,72 +75,98 @@ export function useUPMetadata() {
         throw new Error('Cannot store undefined value');
       }
       
-      // Ensure we have valid addresses for address arrays
+      // For address arrays, ensure they're clean and properly formatted
       if (Array.isArray(value)) {
-        value = value.filter(v => typeof v === 'string' && /^0x[a-fA-F0-9]{40}$/.test(v));
+        // Filter any potential undefined or invalid values
+        value = value.filter(v => 
+          typeof v === 'string' && 
+          v !== undefined && 
+          /^0x[a-fA-F0-9]{40}$/.test(v)
+        );
+        
         if (value.length === 0) {
           throw new Error('No valid addresses provided');
         }
       }
       
-      console.log('Encoding metadata for:', schemaName, value);
+      console.log('Encoding metadata for:', schemaName, 'Value:', value);
       
-      // Encode the data
-      const encodedData = encodeMetadata(schemaName, value);
-      
-      // Validate encoded data before sending to contract
-      if (!encodedData.keys.length || !encodedData.values.length) {
-        throw new Error('Failed to encode metadata');
+      // Use a try/catch specifically for the encoding step
+      let encodedData;
+      try {
+        encodedData = encodeMetadata(schemaName, value);
+        
+        if (!encodedData.keys.length || !encodedData.values.length) {
+          throw new Error('Failed to encode metadata - empty result');
+        }
+        
+        // Ensure no values are undefined in our payload
+        if (encodedData.values.some(v => v === undefined)) {
+          throw new Error('Encoded values contain undefined');
+        }
+        
+        console.log('Encoded data keys:', encodedData.keys);
+        console.log('Encoded data values:', encodedData.values);
+      } catch (encodeError) {
+        console.error('Encoding error:', encodeError);
+        throw new Error(`Failed to encode data: ${encodeError instanceof Error ? encodeError.message : 'Unknown error'}`);
       }
       
-      console.log('Encoded data:', encodedData.keys, encodedData.values);
-      
-      // Create a Web3Provider from the UP Provider
-      const web3Provider = new ethers.providers.Web3Provider(provider as UPProvider);
-      
-      // Get the signer from the connected account
-      const signer = web3Provider.getSigner(accounts[0]);
-      
-      // Create contract instance - using the connected UP address
-      const universalProfile = new ethers.Contract(
-        accounts[0],
-        LSP0ERC725AccountABI,
-        signer
-      );
-      
-      // Store data on the Universal Profile - with explicit error handling
       try {
+        // Create a Web3Provider from the UP Provider
+        const web3Provider = new ethers.providers.Web3Provider(provider as UPProvider);
+        
+        // Get the signer from the connected account
+        const signer = web3Provider.getSigner(accounts[0]);
+        
+        // Create contract instance - using the connected UP address
+        const universalProfile = new ethers.Contract(
+          accounts[0],
+          LSP0ERC725AccountABI,
+          signer
+        );
+        
+        // Store data on the Universal Profile - with explicit checks
+        const keys = encodedData.keys;
+        const values = encodedData.values;
+        
+        console.log('Sending transaction with:', {
+          address: accounts[0],
+          keys: keys,
+          values: values
+        });
+        
+        // Send the transaction with specified gas
         const tx = await universalProfile.setDataBatch(
-          encodedData.keys,
-          encodedData.values
+          keys,
+          values,
+          { gasLimit: 1000000 } // Specify gas limit explicitly
         );
         
         console.log('Transaction submitted:', tx);
-        setState({ loading: true, error: null, txHash: tx.hash }); // Keep loading true until confirmed
+        setState({ loading: true, error: null, txHash: tx.hash });
         
         const receipt = await tx.wait();
         console.log('Transaction confirmed:', receipt);
         
-        setState({ loading: false, error: null, txHash: tx.hash }); // Set loading to false when done
+        setState({ loading: false, error: null, txHash: tx.hash });
         return tx.hash;
       } catch (txError: unknown) {
         console.error('Transaction failed:', txError);
         
-        // Cast to an appropriate error type for property access
         const errorObj = txError as Error & {
           reason?: string,
           error?: { message?: string },
           data?: { message?: string }
         };
         
-        // Handle provider errors that might be nested
         const errorMessage = 
-          (errorObj.reason as string) || 
+          errorObj.reason || 
           errorObj.error?.message || 
           errorObj.data?.message || 
           errorObj.message || 
           'Unknown transaction error';
-                            
+                      
         setState({ loading: false, error: errorMessage, txHash: null });
         throw new Error(`Transaction failed: ${errorMessage}`);
       }

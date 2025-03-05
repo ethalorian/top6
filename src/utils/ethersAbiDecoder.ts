@@ -50,53 +50,62 @@ export function encodeAddressArray(addresses: string[]): string {
  */
 export function decodeERC725YValue(data: string, valueType: string): string | string[] | number | boolean | Record<string, unknown> | null {
   try {
-    // Special handling for address[] which is especially important for LUKSO UP
+    // Special handling for address[] which seems to have a different format
     if (valueType === 'address[]') {
+      console.log('Decoding address array, raw data:', data);
+      
       try {
         // First try standard decoding
         const decoded = ethers.utils.defaultAbiCoder.decode(['address[]'], data)[0];
-        // Validate each address to ensure it's a proper Ethereum address
-        const validAddresses = decoded.filter((addr: string) => 
-          typeof addr === 'string' && /^0x[a-fA-F0-9]{40}$/.test(addr)
-        );
+        console.log('Standard decoding result:', decoded);
+        
+        // Validate addresses - only accept valid Ethereum addresses
+        const validAddresses = decoded
+          .filter((addr: string) => 
+            typeof addr === 'string' && 
+            /^0x[a-fA-F0-9]{40}$/.test(addr) &&
+            // Exclude special addresses that are actually metadata
+            !addr.startsWith('0x000000000000000000000000000000000000000')
+          );
         
         if (validAddresses.length > 0) {
+          console.log('Valid addresses after filtering:', validAddresses);
           return validAddresses;
         }
         
         throw new Error('No valid addresses found in standard decoding');
-      } catch {  // Not capturing the error variable at all
-        console.log('Standard address[] decoding failed, trying custom approach');
+      } catch (e) {
+        console.log('Standard decoding failed, trying LUKSO specific format');
         
-        // Try a different approach - extract any valid addresses from the data
-        // This is much more reliable than trying to guess the exact layout
+        // Based on the specific LUKSO format we're seeing:
+        // Find the valid Ethereum addresses by looking at each 32-byte chunk
+        // and filtering for addresses that don't start with many zeros
+        
         const addresses: string[] = [];
         
-        // Process the data in 32-byte (64 hex chars) chunks
-        for (let i = 2; i < data.length; i += 64) {
-          if (i + 64 <= data.length) {
-            // The last 20 bytes of each 32-byte chunk might be an address
-            const potentialAddress = '0x' + data.substring(i + 24, i + 64);
+        // Process 32-byte chunks
+        for (let i = 2; i < data.length / 64; i++) {
+          const start = i * 64;
+          const end = start + 64;
+          
+          if (end <= data.length) {
+            // Get the last 20 bytes (40 chars) of each 32-byte chunk
+            const addressCandidate = '0x' + data.substring(start + 24, end);
             
-            // Only include valid Ethereum addresses
-            if (/^0x[0-9a-fA-F]{40}$/.test(potentialAddress)) {
-              // Quick check to avoid false positives - addresses shouldn't be all zeros
-              if (potentialAddress !== '0x0000000000000000000000000000000000000000') {
-                addresses.push(potentialAddress);
+            // Only include if it's a valid address and not a special metadata address
+            if (/^0x[a-fA-F0-9]{40}$/.test(addressCandidate) && 
+                !addressCandidate.startsWith('0x00000000000000000000000000000000000000')) {
+              try {
+                addresses.push(ethers.utils.getAddress(addressCandidate));
+              } catch {
+                // Skip if not valid checksum
               }
             }
           }
         }
         
-        if (addresses.length > 0) {
-          console.log('Found addresses using alternative extraction:', addresses);
-          return addresses;
-        }
-        
-        // If all else fails, at least provide debugging info
-        console.error('Could not extract addresses using any method');
-        console.error('Raw data:', data);
-        return [];
+        console.log('LUKSO format addresses:', addresses);
+        return addresses;
       }
     }
     
