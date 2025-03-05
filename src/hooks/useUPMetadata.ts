@@ -117,15 +117,23 @@ export function useUPMetadata() {
         
         setState({ loading: false, error: null, txHash: tx.hash });
         return tx.hash;
-      } catch (txError: any) {
+      } catch (txError: unknown) {
         console.error('Transaction failed:', txError);
         
+        // Cast to an appropriate error type for property access
+        const errorObj = txError as Error & {
+          reason?: string,
+          error?: { message?: string },
+          data?: { message?: string }
+        };
+        
         // Handle provider errors that might be nested
-        const errorMessage = txError.reason || 
-                            (txError.error?.message) || 
-                            (txError.data?.message) || 
-                            txError.message || 
-                            'Unknown transaction error';
+        const errorMessage = 
+          (errorObj.reason as string) || 
+          errorObj.error?.message || 
+          errorObj.data?.message || 
+          errorObj.message || 
+          'Unknown transaction error';
                             
         setState({ loading: false, error: errorMessage, txHash: null });
         throw new Error(`Transaction failed: ${errorMessage}`);
