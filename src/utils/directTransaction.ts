@@ -2,7 +2,7 @@
 declare global {
   interface Window {
     ethereum?: {
-      request: (args: { method: string; params?: any[] }) => Promise<unknown>;
+      request: (args: { method: string; params?: unknown[] }) => Promise<unknown>;
       isConnected?: () => boolean;
       selectedAddress?: string;
     };
