@@ -11,79 +11,62 @@ export function decodeAddressArray(data: string): string[] {
   try {
     // Guard against invalid input
     if (!data || typeof data !== 'string' || data === '0x') {
-      console.log('Empty or invalid data for address array decoding, returning empty array:', data);
       return [];
     }
 
-    console.log('Decoding ABI address array, raw data:', data);
+    // The LUKSO format has multiple offsets before the actual array data
+    // 1. First we find the main offset
+    const mainOffsetHex = data.substring(0, 66);
+    const mainOffset = parseInt(mainOffsetHex.substring(2), 16);
     
-    // Skip the standard ethers decoding which is failing
-    // and go straight to manual parsing for LUKSO format
-    console.log('Parsing LUKSO address array format manually');
+    // 2. Locate potential array length position
+    // The array length is typically after several offsets
+    let lengthPos = 2 + (mainOffset * 2); // Start at the main offset
     
-    // The format follows ABI encoding:
-    // 1. 0x + first 64 chars: offset pointer
-    // 2. Next 64 chars: Array length (at the offset position)
-    // 3. Each address padded to 32 bytes (64 chars)
-    
-    // Find the array length
-    const offsetHex = data.substring(0, 66);
-    const offset = parseInt(offsetHex.substring(2), 16);
-    console.log('Offset pointer:', offset, 'hex:', offsetHex);
-    
-    // Position where array length is stored (at the offset position)
-    const lengthPos = 2 + (offset * 2); // convert bytes to hex chars
-    
-    if (lengthPos + 64 <= data.length) {
-      const lengthHex = '0x' + data.substring(lengthPos, lengthPos + 64);
-      const arrayLength = parseInt(lengthHex.substring(2), 16);
-      console.log('Array length:', arrayLength, 'hex:', lengthHex);
+    // Look for array length marker by skipping potential nested offsets
+    // Try to find the pattern where we have a small number (array length)
+    // followed by address data
+    for (let searchPos = lengthPos; searchPos < data.length - 64; searchPos += 64) {
+      const valueHex = data.substring(searchPos, searchPos + 64);
+      const value = parseInt(valueHex, 16);
       
-      const addresses: string[] = [];
-      
-      // Start position of the first address (after the length field)
-      const startAddressPos = lengthPos + 64;
-      
-      for (let i = 0; i < arrayLength && i < 10; i++) { // Limit to 10 addresses as safety
-        const addrPos = startAddressPos + (i * 64);
+      // If we find a small value (likely array length) that's reasonable
+      if (value > 0 && value < 100) {
+        const addresses: string[] = [];
         
-        if (addrPos + 64 <= data.length) {
-          // Address is in the last 40 chars of the 64-char segment
-          // (20 bytes of a 32-byte word)
-          const addrHex = '0x' + data.substring(addrPos + 24, addrPos + 64);
+        // Check if this is followed by address data
+        for (let i = 0; i < value && i < 20; i++) { // Limit to 20 addresses as safety
+          const addrPos = searchPos + 64 + (i * 64);
           
-          if (/^0x[a-fA-F0-9]{40}$/.test(addrHex) && 
-              !addrHex.startsWith('0x00000000000000000000')) {
-            try {
-              // Format with proper checksum
-              const checksumAddr = ethers.utils.getAddress(addrHex);
-              addresses.push(checksumAddr);
-              console.log('Found valid address at position', i, ':', checksumAddr);
-            } catch {
-              console.log('Invalid checksum for address:', addrHex);
+          if (addrPos + 64 <= data.length) {
+            const addrHex = '0x' + data.substring(addrPos + 24, addrPos + 64);
+            
+            if (/^0x[a-fA-F0-9]{40}$/.test(addrHex) && 
+                !addrHex.startsWith('0x00000000000000000000')) {
+              try {
+                const checksumAddr = ethers.utils.getAddress(addrHex);
+                addresses.push(checksumAddr);
+              } catch {
+                // Invalid address, skip
+              }
             }
           }
         }
-      }
-      
-      if (addresses.length > 0) {
-        console.log('Successfully extracted', addresses.length, 'addresses:', addresses);
-        return addresses;
+        
+        // If we found valid addresses, return them
+        if (addresses.length > 0) {
+          return addresses;
+        }
       }
     }
     
-    // Last resort - look for the specific address pattern in the data
+    // Fallback: scan for address patterns in the data
     const addressPattern = /[a-fA-F0-9]{40}/g;
     const matches = data.match(addressPattern) || [];
     
-    // Filter and process potential addresses
-    const validAddresses = matches
+    return matches
       .map(match => '0x' + match)
-      .filter(addr => 
-        // Filter out obvious metadata
-        !addr.startsWith('0x00000000000000000000') &&
-        !addr.startsWith('0x000000000000000000000000000000000000')
-      )
+      .filter(addr => !addr.startsWith('0x00000000000000000000'))
       .map(addr => {
         try {
           return ethers.utils.getAddress(addr);
@@ -92,9 +75,6 @@ export function decodeAddressArray(data: string): string[] {
         }
       })
       .filter(Boolean) as string[];
-    
-    console.log('Addresses extracted with regex:', validAddresses);
-    return validAddresses;
   } catch (error) {
     console.error('Error decoding address array:', error);
     return [];
