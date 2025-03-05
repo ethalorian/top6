@@ -82,7 +82,7 @@ export function decodeAddressArray(data: string): string[] {
               addresses.push(checksumAddr);
               console.log('Found valid address at position', i, ':', checksumAddr);
             } catch (e) {
-              console.log('Invalid checksum for address:', addrHex);
+              console.log('Invalid checksum for address:', addrHex, 'Error:', e);
             }
           }
         }
