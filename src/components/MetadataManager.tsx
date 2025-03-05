@@ -93,14 +93,24 @@ export const MetadataManager: React.FC<MetadataManagerProps> = ({
       
       console.log(`Updating address at index ${index} to ${address}`);
       
-      // Ensure all addresses are valid Ethereum addresses
-      const sanitizedAddresses = addressesToUpdate.map(addr => 
-        validateAddress(addr) ? addr : '0x0000000000000000000000000000000000000000'
-      );
+      // Extra defensive check - log array contents for debugging
+      console.log('About to save array:', JSON.stringify(addressesToUpdate));
+      
+      // Ensure every item is a valid string address and nothing else
+      const sanitizedAddresses = addressesToUpdate.map(addr => {
+        if (typeof addr !== 'string' || !validateAddress(addr)) {
+          return '0x0000000000000000000000000000000000000000';
+        }
+        return addr;
+      });
       
       // Save the updated array
       try {
-        const txHash = await storeMetadataOnProfile(schemaName, sanitizedAddresses);
+        // Try with explicit array wrapping and JSON stringify/parse to ensure clean objects
+        const cleanAddresses = JSON.parse(JSON.stringify(sanitizedAddresses));
+        console.log('Clean addresses to send:', cleanAddresses);
+        
+        const txHash = await storeMetadataOnProfile(schemaName, cleanAddresses);
         console.log('Save successful with hash:', txHash);
         setSavedAddresses(sanitizedAddresses);
         setIndexOperation({ index, status: 'success' });
@@ -161,22 +171,34 @@ export const MetadataManager: React.FC<MetadataManagerProps> = ({
     setError(null);
     console.log('Saving addresses:', validAddresses);
     
-    // Ensure addresses are properly formatted to avoid BigInt conversion issues
-    const sanitizedAddresses = validAddresses.map(addr => 
-      validateAddress(addr) ? addr : '0x0000000000000000000000000000000000000000'
-    );
+    // Create a clean, simple array of strings
+    const sanitizedAddresses = validAddresses.map(addr => String(addr));
     
-    storeMetadataOnProfile(schemaName, sanitizedAddresses)
-      .then(txHash => {
-        console.log('Save successful with hash:', txHash);
-        setSavedAddresses(sanitizedAddresses);
-        setIsSaving(false);
-      })
-      .catch(err => {
-        console.error('Save failed with error:', err);
-        setError(err.message || 'Failed to save addresses');
-        setIsSaving(false);
-      });
+    // Log for debugging
+    console.log('About to save array:', JSON.stringify(sanitizedAddresses));
+    
+    // Try a different approach with a clean array
+    try {
+      // Use a clean copy without any prototype chains or references
+      const cleanAddresses = JSON.parse(JSON.stringify(sanitizedAddresses));
+      console.log('Clean addresses to send:', cleanAddresses);
+      
+      storeMetadataOnProfile(schemaName, cleanAddresses)
+        .then(txHash => {
+          console.log('Save successful with hash:', txHash);
+          setSavedAddresses(sanitizedAddresses);
+          setIsSaving(false);
+        })
+        .catch(err => {
+          console.error('Save failed with error:', err);
+          setError(err.message || 'Failed to save addresses');
+          setIsSaving(false);
+        });
+    } catch (err) {
+      console.error('Error preparing data:', err);
+      setError('Failed to prepare data for saving');
+      setIsSaving(false);
+    }
   };
   
   // Load addresses from UP
