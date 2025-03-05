@@ -88,55 +88,90 @@ export const MetadataManager: React.FC<MetadataManagerProps> = ({
         addressesToUpdate.push('0x0000000000000000000000000000000000000000');
       }
       
-      // Update the specific address
-      addressesToUpdate[index] = address;
+      // Update the specific address - normalize to lowercase
+      addressesToUpdate[index] = address.toLowerCase();
       
-      console.log(`Updating address at index ${index} to ${address}`);
+      // Track transaction status
+      let transactionSent = false;
+      let transactionRejected = false;
       
-      // Create a simple, primitive string array
-      const simplifiedAddresses = addressesToUpdate.map(addr => {
-        if (typeof addr !== 'string' || !validateAddress(addr)) {
-          return '0x0000000000000000000000000000000000000000';
+      // Set up delayed verification
+      const verifyAfterDelay = () => {
+        // Only do this if we sent a transaction but got an error
+        if (transactionSent && !transactionRejected) {
+          console.log("Transaction may have been sent but UI error occurred. Verifying...");
+          setTimeout(async () => {
+            // Try to retrieve updated data
+            try {
+              const result = await retrieveMyMetadata(schemaName);
+              if (result && Array.isArray(result.value)) {
+                const updatedAddresses = result.value as string[];
+                
+                // Check if our address is actually in the chain data
+                if (updatedAddresses.length > index && 
+                    updatedAddresses[index].toLowerCase() === address.toLowerCase()) {
+                  console.log("Transaction appears to have succeeded. Address verified on chain.");
+                  setSavedAddresses(updatedAddresses);
+                  setIndexOperation({ index, status: 'success' });
+                  
+                  // Clear success status after 3 seconds
+                  setTimeout(() => {
+                    setIndexOperation(null);
+                  }, 3000);
+                  
+                  setError("Transaction appears to have succeeded despite UI error.");
+                  return;
+                }
+              }
+              // If we got here, verification failed
+              setError("Unable to verify if transaction succeeded. Please check by loading addresses.");
+              setIndexOperation({ index, status: 'error', message: "Verification failed" });
+            } catch (verifyErr) {
+              console.error("Verification error:", verifyErr);
+              setError("Unable to verify transaction status. Please check by loading addresses.");
+              setIndexOperation({ index, status: 'error', message: "Verification failed" });
+            }
+          }, 5000); // Wait 5 seconds before verifying
         }
-        return addr.toLowerCase(); // Normalize addresses
-      });
-      
-      // Deep debugging
-      console.log('Sending array:', JSON.stringify(simplifiedAddresses));
-      console.log('Array type:', Object.prototype.toString.call(simplifiedAddresses));
-      console.log('Array elements:', simplifiedAddresses.map(a => typeof a));
+      };
       
       try {
-        // Wrap in a try block with a timeout to catch any issues
-        const timeoutPromise = new Promise((_, reject) => 
-          setTimeout(() => reject(new Error('Transaction timeout')), 25000)
-        );
-        
-        // Race the transaction against the timeout
-        const txHash = await Promise.race([
-          storeMetadataOnProfile(schemaName, simplifiedAddresses),
-          timeoutPromise
-        ]);
-        
+        // Track that we're sending the transaction
+        transactionSent = true;
+        const txHash = await storeMetadataOnProfile(schemaName, addressesToUpdate);
         console.log('Save successful with hash:', txHash);
-        setSavedAddresses(simplifiedAddresses);
+        setSavedAddresses(addressesToUpdate);
         setIndexOperation({ index, status: 'success' });
         
+        // Clear success status after 3 seconds
         setTimeout(() => {
           setIndexOperation(null);
         }, 3000);
       } catch (txErr: unknown) {
         console.error('Transaction error:', txErr);
         const errMessage = txErr instanceof Error ? txErr.message : String(txErr);
+        
+        // Check if it's the specific BigInt error
+        if (errMessage.includes('BigInt') || errMessage.includes('timeout')) {
+          console.log("Got BigInt error or timeout. Transaction may still have succeeded.");
+          // Start verification process
+          verifyAfterDelay();
+          return;
+        }
+        
+        // For other errors, mark as rejected
+        transactionRejected = true;
         throw new Error(`Transaction failed: ${errMessage}`);
       }
     } catch (err: unknown) {
       const errorMessage = err instanceof Error ? err.message : 'Unknown error';
       console.error(`Save at index ${index} failed:`, err);
       
+      // Make sure to reset the saving state
       setError(errorMessage || `Failed to save address at position ${index + 1}`);
       setIndexOperation({ index, status: 'error', message: errorMessage });
       
+      // Force UI update in case of BigInt serialization errors
       setTimeout(() => {
         if (indexOperation?.index === index && indexOperation?.status === 'saving') {
           setIndexOperation(null);
@@ -176,19 +211,50 @@ export const MetadataManager: React.FC<MetadataManagerProps> = ({
     setIsSaving(true);
     setError(null);
     
-    console.log('Saving valid addresses:', validAddresses);
-    console.log('Array type:', Object.prototype.toString.call(validAddresses));
-    console.log('Element types:', validAddresses.map(a => typeof a));
+    // Track transaction status
+    let transactionSent = false;
+    let transactionRejected = false;
     
-    // Try with a Promise.race for timeout safety
-    const timeoutPromise = new Promise((_, reject) => 
-      setTimeout(() => reject(new Error('Transaction timeout')), 25000)
-    );
+    // Set up delayed verification
+    const verifyAfterDelay = () => {
+      if (transactionSent && !transactionRejected) {
+        console.log("Transaction may have been sent but UI error occurred. Verifying...");
+        setTimeout(async () => {
+          try {
+            // Attempt to load the latest addresses
+            const result = await retrieveMyMetadata(schemaName);
+            if (result && Array.isArray(result.value)) {
+              const updatedAddresses = result.value as string[];
+              
+              // Check if addresses match what we tried to save
+              const allMatch = validAddresses.every((addr, idx) => 
+                idx < updatedAddresses.length && 
+                updatedAddresses[idx].toLowerCase() === addr.toLowerCase());
+              
+              if (allMatch) {
+                console.log("Transaction appears to have succeeded. Addresses verified on chain.");
+                setSavedAddresses(updatedAddresses);
+                setIsSaving(false);
+                setError("Transaction appears to have succeeded despite UI error.");
+                return;
+              }
+            }
+            
+            // If we got here, verification failed
+            setIsSaving(false);
+            setError("Unable to verify if transaction succeeded. Please check by loading addresses.");
+          } catch (verifyErr) {
+            console.error("Verification error:", verifyErr);
+            setIsSaving(false);
+            setError("Unable to verify transaction status. Please check by loading addresses.");
+          }
+        }, 5000); // Wait 5 seconds before verifying
+      }
+    };
     
-    Promise.race([
-      storeMetadataOnProfile(schemaName, validAddresses),
-      timeoutPromise
-    ])
+    // Try to save addresses
+    transactionSent = true;
+    storeMetadataOnProfile(schemaName, validAddresses)
       .then(txHash => {
         console.log('Save successful with hash:', txHash);
         setSavedAddresses(validAddresses);
@@ -196,7 +262,19 @@ export const MetadataManager: React.FC<MetadataManagerProps> = ({
       })
       .catch(err => {
         console.error('Save failed with error:', err);
-        setError(err.message || 'Failed to save addresses');
+        const errMessage = err instanceof Error ? err.message : String(err);
+        
+        // Check if it's the specific BigInt error
+        if (errMessage.includes('BigInt') || errMessage.includes('timeout')) {
+          console.log("Got BigInt error or timeout. Transaction may still have succeeded.");
+          // Start verification process
+          verifyAfterDelay();
+          return;
+        }
+        
+        // For other errors, mark as rejected
+        transactionRejected = true;
+        setError(errMessage || 'Failed to save addresses');
         setIsSaving(false);
       });
   };
