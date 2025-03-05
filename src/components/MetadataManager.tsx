@@ -4,7 +4,17 @@
 import React, { useState } from 'react';
 import { useUPMetadata } from '../hooks/useUPMetadata';
 
-export const MetadataManager: React.FC = () => {
+interface MetadataManagerProps {
+  title: string;
+  schemaName: string;
+  maxAddresses: number;
+}
+
+export const MetadataManager: React.FC<MetadataManagerProps> = ({ 
+  title, 
+  schemaName, 
+  maxAddresses 
+}) => {
   const {
     storeMetadataOnProfile,
     retrieveMyMetadata,
@@ -32,6 +42,10 @@ export const MetadataManager: React.FC = () => {
   
   // Add new address field
   const addAddressField = () => {
+    if (addresses.length >= maxAddresses) {
+      setError(`Maximum of ${maxAddresses} addresses allowed`);
+      return;
+    }
     setAddresses([...addresses, '']);
   };
   
@@ -51,7 +65,7 @@ export const MetadataManager: React.FC = () => {
     setError(null);
     console.log('Saving addresses:', validAddresses);
     
-    storeMetadataOnProfile('MyTopAccounts', validAddresses)
+    storeMetadataOnProfile(schemaName, validAddresses)
       .then(txHash => {
         console.log('Save successful with hash:', txHash);
         setSavedAddresses(validAddresses);
@@ -72,7 +86,7 @@ export const MetadataManager: React.FC = () => {
     setError(null);
     console.log('Loading addresses...');
     
-    retrieveMyMetadata('MyTopAccounts')
+    retrieveMyMetadata(schemaName)
       .then(result => {
         console.log('Load result:', result);
         
@@ -97,7 +111,7 @@ export const MetadataManager: React.FC = () => {
 
   return (
     <div style={{ padding: '20px', maxWidth: '600px', margin: '0 auto' }}>
-      <h1>UP Metadata Tester</h1>
+      <h1>{title}</h1>
       
       {isConnected ? (
         <p>Connected to: {profileAddress}</p>
@@ -123,7 +137,11 @@ export const MetadataManager: React.FC = () => {
           </div>
         ))}
         
-        <button onClick={addAddressField} style={{ marginBottom: '10px' }}>
+        <button 
+          onClick={addAddressField} 
+          disabled={addresses.length >= maxAddresses}
+          style={{ marginBottom: '10px' }}
+        >
           Add Address
         </button>
       </div>
