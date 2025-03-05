@@ -143,8 +143,14 @@ export function decodeERC725YValue(data: string, valueType: string): string | st
  * @param valueType The ERC725Y valueType string
  * @returns The ABI-encoded data
  */
-export function encodeERC725YValue(value: string | string[] | number | boolean | Record<string, unknown>, valueType: string): string {
+export function encodeERC725YValue(value: string | string[] | number | boolean | Record<string, unknown> | null, valueType: string): string {
   try {
+    // Handle null values
+    if (value === null) {
+      // For null values, return an empty bytes value
+      return '0x';
+    }
+    
     // Convert ERC725Y valueType to ethers ABI type (same mapping as above)
     const abiTypeMap: Record<string, string> = {
       'address': 'address',
