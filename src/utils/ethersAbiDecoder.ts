@@ -118,26 +118,44 @@ export function decodeERC725YValue(data: string, valueType: string): string | st
           const end = start + 64;
           
           if (end <= data.length) {
-            // Get the address part (last 40 chars) of each 32-byte chunk
-            // The proper format is the LAST 40 characters of the 64-character chunk
             const chunk = data.substring(start, end);
-            const addressCandidate = '0x' + chunk.substring(chunk.length - 40);
+            console.log('Processing chunk:', chunk);
             
-            console.log('Chunk:', chunk, 'Extracted address:', addressCandidate);
+            // Try both formats - addresses can be right-padded or left-padded
             
-            // Only include if it's a valid address and not a special metadata address
-            if (/^0x[a-fA-F0-9]{40}$/.test(addressCandidate) && 
-                !addressCandidate.startsWith('0x00000000000000000000000000000000000000')) {
-              try {
-                // Use ethers.utils.getAddress to get proper checksum
-                const checksumAddress = ethers.utils.getAddress(addressCandidate);
-                addresses.push(checksumAddress);
-                console.log('Valid address found:', checksumAddress);
-              } catch (error) {
-                console.log('Invalid checksum for address:', addressCandidate, error);
-                // Skip if not valid checksum
+            // Format 1: Address in the last 20 bytes (right-aligned, left-padded with zeros)
+            // This is the standard Ethereum encoding
+            const addressCandidate1 = '0x' + chunk.substring(chunk.length - 40);
+            
+            // Format 2: Address in the first 20 bytes (left-aligned, right-padded with zeros)
+            // Some implementations use this format
+            const addressCandidate2 = '0x' + chunk.substring(0, 40);
+            
+            console.log('Candidates:', addressCandidate1, addressCandidate2);
+            
+            // Check both candidates
+            [addressCandidate1, addressCandidate2].forEach(candidate => {
+              if (/^0x[a-fA-F0-9]{40}$/.test(candidate)) {
+                // Skip obvious metadata/special addresses
+                if (candidate.startsWith('0x00000000000000000000000000000000000000')) {
+                  console.log('Skipping metadata address:', candidate);
+                  return;
+                }
+                
+                try {
+                  // Use ethers.utils.getAddress to properly format with checksum
+                  const checksumAddress = ethers.utils.getAddress(candidate);
+                  
+                  // Only add if we don't already have this address
+                  if (!addresses.includes(checksumAddress)) {
+                    addresses.push(checksumAddress);
+                    console.log('Valid address found:', checksumAddress);
+                  }
+                } catch (error) {
+                  console.log('Invalid checksum for address:', candidate, error);
+                }
               }
-            }
+            });
           }
         }
         
@@ -325,5 +343,4 @@ export function explainAddressArrayEncoding(data: string): Record<string, string
     console.error('Error explaining ABI data:', error);
     return { error: 'Failed to parse ABI data: ' + (error as Error).message };
   }
-}
 }
