@@ -89,15 +89,23 @@ export function decodeERC725YValue(data: string, valueType: string): string | st
           const end = start + 64;
           
           if (end <= data.length) {
-            // Get the last 20 bytes (40 chars) of each 32-byte chunk
-            const addressCandidate = '0x' + data.substring(start + 24, end);
+            // Get the address part (last 40 chars) of each 32-byte chunk
+            // The proper format is the LAST 40 characters of the 64-character chunk
+            const chunk = data.substring(start, end);
+            const addressCandidate = '0x' + chunk.substring(chunk.length - 40);
+            
+            console.log('Chunk:', chunk, 'Extracted address:', addressCandidate);
             
             // Only include if it's a valid address and not a special metadata address
             if (/^0x[a-fA-F0-9]{40}$/.test(addressCandidate) && 
                 !addressCandidate.startsWith('0x00000000000000000000000000000000000000')) {
               try {
-                addresses.push(ethers.utils.getAddress(addressCandidate));
-              } catch {
+                // Use ethers.utils.getAddress to get proper checksum
+                const checksumAddress = ethers.utils.getAddress(addressCandidate);
+                addresses.push(checksumAddress);
+                console.log('Valid address found:', checksumAddress);
+              } catch (error) {
+                console.log('Invalid checksum for address:', addressCandidate, error);
                 // Skip if not valid checksum
               }
             }
