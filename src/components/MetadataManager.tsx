@@ -93,29 +93,35 @@ export const MetadataManager: React.FC<MetadataManagerProps> = ({
       
       console.log(`Updating address at index ${index} to ${address}`);
       
-      // Extra defensive check - log array contents for debugging
-      console.log('About to save array:', JSON.stringify(addressesToUpdate));
-      
-      // Ensure every item is a valid string address and nothing else
-      const sanitizedAddresses = addressesToUpdate.map(addr => {
+      // Create a simple, primitive string array
+      const simplifiedAddresses = addressesToUpdate.map(addr => {
         if (typeof addr !== 'string' || !validateAddress(addr)) {
           return '0x0000000000000000000000000000000000000000';
         }
-        return addr;
+        return addr.toLowerCase(); // Normalize addresses
       });
       
-      // Save the updated array
+      // Deep debugging
+      console.log('Sending array:', JSON.stringify(simplifiedAddresses));
+      console.log('Array type:', Object.prototype.toString.call(simplifiedAddresses));
+      console.log('Array elements:', simplifiedAddresses.map(a => typeof a));
+      
       try {
-        // Try with explicit array wrapping and JSON stringify/parse to ensure clean objects
-        const cleanAddresses = JSON.parse(JSON.stringify(sanitizedAddresses));
-        console.log('Clean addresses to send:', cleanAddresses);
+        // Wrap in a try block with a timeout to catch any issues
+        const timeoutPromise = new Promise((_, reject) => 
+          setTimeout(() => reject(new Error('Transaction timeout')), 25000)
+        );
         
-        const txHash = await storeMetadataOnProfile(schemaName, cleanAddresses);
+        // Race the transaction against the timeout
+        const txHash = await Promise.race([
+          storeMetadataOnProfile(schemaName, simplifiedAddresses),
+          timeoutPromise
+        ]);
+        
         console.log('Save successful with hash:', txHash);
-        setSavedAddresses(sanitizedAddresses);
+        setSavedAddresses(simplifiedAddresses);
         setIndexOperation({ index, status: 'success' });
         
-        // Clear success status after 3 seconds
         setTimeout(() => {
           setIndexOperation(null);
         }, 3000);
@@ -128,11 +134,9 @@ export const MetadataManager: React.FC<MetadataManagerProps> = ({
       const errorMessage = err instanceof Error ? err.message : 'Unknown error';
       console.error(`Save at index ${index} failed:`, err);
       
-      // Make sure to reset the saving state
       setError(errorMessage || `Failed to save address at position ${index + 1}`);
       setIndexOperation({ index, status: 'error', message: errorMessage });
       
-      // Force UI update in case of BigInt serialization errors
       setTimeout(() => {
         if (indexOperation?.index === index && indexOperation?.status === 'saving') {
           setIndexOperation(null);
@@ -159,8 +163,10 @@ export const MetadataManager: React.FC<MetadataManagerProps> = ({
   const saveAddresses = () => {
     if (!isConnected || isSaving) return;
     
+    // Only use valid addresses
     const validAddresses = addresses
-      .filter(addr => validateAddress(addr));
+      .filter(addr => validateAddress(addr))
+      .map(addr => addr.toLowerCase()); // Normalize addresses
     
     if (validAddresses.length === 0) {
       setError('Please add at least one valid address');
@@ -169,36 +175,30 @@ export const MetadataManager: React.FC<MetadataManagerProps> = ({
     
     setIsSaving(true);
     setError(null);
-    console.log('Saving addresses:', validAddresses);
     
-    // Create a clean, simple array of strings
-    const sanitizedAddresses = validAddresses.map(addr => String(addr));
+    console.log('Saving valid addresses:', validAddresses);
+    console.log('Array type:', Object.prototype.toString.call(validAddresses));
+    console.log('Element types:', validAddresses.map(a => typeof a));
     
-    // Log for debugging
-    console.log('About to save array:', JSON.stringify(sanitizedAddresses));
+    // Try with a Promise.race for timeout safety
+    const timeoutPromise = new Promise((_, reject) => 
+      setTimeout(() => reject(new Error('Transaction timeout')), 25000)
+    );
     
-    // Try a different approach with a clean array
-    try {
-      // Use a clean copy without any prototype chains or references
-      const cleanAddresses = JSON.parse(JSON.stringify(sanitizedAddresses));
-      console.log('Clean addresses to send:', cleanAddresses);
-      
-      storeMetadataOnProfile(schemaName, cleanAddresses)
-        .then(txHash => {
-          console.log('Save successful with hash:', txHash);
-          setSavedAddresses(sanitizedAddresses);
-          setIsSaving(false);
-        })
-        .catch(err => {
-          console.error('Save failed with error:', err);
-          setError(err.message || 'Failed to save addresses');
-          setIsSaving(false);
-        });
-    } catch (err) {
-      console.error('Error preparing data:', err);
-      setError('Failed to prepare data for saving');
-      setIsSaving(false);
-    }
+    Promise.race([
+      storeMetadataOnProfile(schemaName, validAddresses),
+      timeoutPromise
+    ])
+      .then(txHash => {
+        console.log('Save successful with hash:', txHash);
+        setSavedAddresses(validAddresses);
+        setIsSaving(false);
+      })
+      .catch(err => {
+        console.error('Save failed with error:', err);
+        setError(err.message || 'Failed to save addresses');
+        setIsSaving(false);
+      });
   };
   
   // Load addresses from UP
