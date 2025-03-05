@@ -55,9 +55,18 @@ export function decodeERC725YValue(data: string, valueType: string): string | st
       try {
         // First try standard decoding
         const decoded = ethers.utils.defaultAbiCoder.decode(['address[]'], data)[0];
-        return decoded;
-      } catch (e) {
-        console.log('Standard address[] decoding failed, trying alternative approach');
+        // Validate each address to ensure it's a proper Ethereum address
+        const validAddresses = decoded.filter((addr: string) => 
+          typeof addr === 'string' && /^0x[a-fA-F0-9]{40}$/.test(addr)
+        );
+        
+        if (validAddresses.length > 0) {
+          return validAddresses;
+        }
+        
+        throw new Error('No valid addresses found in standard decoding');
+      } catch (_) {  // Using underscore to indicate intentionally unused variable
+        console.log('Standard address[] decoding failed, trying custom approach');
         
         // Try a different approach - extract any valid addresses from the data
         // This is much more reliable than trying to guess the exact layout
