@@ -71,8 +71,8 @@ export function useUPMetadata() {
     
     try {
       // Validate value to avoid BigInt conversion issues
-      if (value === undefined) {
-        throw new Error('Cannot store undefined value');
+      if (value === undefined || value === null) {
+        throw new Error('Cannot store undefined or null value');
       }
       
       // For address arrays, ensure they're clean and properly formatted
@@ -81,12 +81,16 @@ export function useUPMetadata() {
         value = value.filter(v => 
           typeof v === 'string' && 
           v !== undefined && 
+          v !== null &&
           /^0x[a-fA-F0-9]{40}$/.test(v)
         );
         
         if (value.length === 0) {
           throw new Error('No valid addresses provided');
         }
+        
+        // Normalize addresses to lowercase
+        value = value.map(v => v.toLowerCase());
       }
       
       console.log('Encoding metadata for:', schemaName, 'Value:', value);
@@ -96,14 +100,27 @@ export function useUPMetadata() {
       try {
         encodedData = encodeMetadata(schemaName, value);
         
-        if (!encodedData.keys.length || !encodedData.values.length) {
+        if (!encodedData.keys || !encodedData.values || 
+            !encodedData.keys.length || !encodedData.values.length) {
           throw new Error('Failed to encode metadata - empty result');
         }
         
-        // Ensure no values are undefined in our payload
-        if (encodedData.values.some(v => v === undefined)) {
-          throw new Error('Encoded values contain undefined');
+        // Ensure no values are undefined or null in our payload
+        if (encodedData.values.some(v => v === undefined || v === null)) {
+          throw new Error('Encoded values contain undefined or null');
         }
+        
+        // Ensure every value is a proper hex string
+        encodedData.values = encodedData.values.map(v => {
+          if (typeof v !== 'string') {
+            throw new Error(`Value is not a string: ${typeof v}`);
+          }
+          // Ensure proper hex format
+          if (!v.startsWith('0x')) {
+            return `0x${v}`;
+          }
+          return v;
+        });
         
         console.log('Encoded data keys:', encodedData.keys);
         console.log('Encoded data values:', encodedData.values);
@@ -130,27 +147,78 @@ export function useUPMetadata() {
         const keys = encodedData.keys;
         const values = encodedData.values;
         
+        // Additional deep validation of values - no undefined allowed
+        for (let i = 0; i < values.length; i++) {
+          if (values[i] === undefined || values[i] === null) {
+            throw new Error(`Value at index ${i} is undefined or null`);
+          }
+          if (typeof values[i] !== 'string') {
+            throw new Error(`Value at index ${i} is not a string: ${typeof values[i]}`);
+          }
+          if (!values[i].startsWith('0x')) {
+            values[i] = `0x${values[i]}`;
+          }
+        }
+        
         console.log('Sending transaction with:', {
           address: accounts[0],
           keys: keys,
           values: values
         });
         
-        // Send the transaction with specified gas
-        const tx = await universalProfile.setDataBatch(
-          keys,
-          values,
-          { gasLimit: 1000000 } // Specify gas limit explicitly
-        );
-        
-        console.log('Transaction submitted:', tx);
-        setState({ loading: true, error: null, txHash: tx.hash });
-        
-        const receipt = await tx.wait();
-        console.log('Transaction confirmed:', receipt);
-        
-        setState({ loading: false, error: null, txHash: tx.hash });
-        return tx.hash;
+        // Send the transaction with specified gas - use try/catch for potential BigInt errors
+        try {
+          const tx = await universalProfile.setDataBatch(
+            keys,
+            values,
+            { gasLimit: 1000000 } // Specify gas limit explicitly
+          );
+          
+          console.log('Transaction submitted:', tx);
+          setState({ loading: true, error: null, txHash: tx.hash });
+          
+          const receipt = await tx.wait();
+          console.log('Transaction confirmed:', receipt);
+          
+          setState({ loading: false, error: null, txHash: tx.hash });
+          return tx.hash;
+        } catch (bigIntError) {
+          console.error('BigInt conversion error:', bigIntError);
+          
+          // Try an alternative approach - manual transaction creation
+          console.log('Trying alternative transaction approach...');
+          
+          // Create transaction data manually
+          const functionSelector = '0x97902421'; // setDataBatch function selector
+          
+          // Encode the parameters - this avoids ethers.js internal BigInt conversion
+          let encodedParams = ethers.utils.defaultAbiCoder.encode(
+            ['bytes32[]', 'bytes[]'],
+            [keys, values]
+          );
+          
+          // Remove the 0x prefix from the encoded params
+          encodedParams = encodedParams.substring(2);
+          
+          // Combine function selector and parameters
+          const data = `${functionSelector}${encodedParams}`;
+          
+          // Send transaction
+          const manualTx = await signer.sendTransaction({
+            to: accounts[0],
+            data: data,
+            gasLimit: ethers.utils.hexlify(1000000)
+          });
+          
+          console.log('Manual transaction submitted:', manualTx);
+          setState({ loading: true, error: null, txHash: manualTx.hash });
+          
+          const manualReceipt = await manualTx.wait();
+          console.log('Manual transaction confirmed:', manualReceipt);
+          
+          setState({ loading: false, error: null, txHash: manualTx.hash });
+          return manualTx.hash;
+        }
       } catch (txError: unknown) {
         console.error('Transaction failed:', txError);
         
