@@ -65,7 +65,7 @@ export function decodeERC725YValue(data: string, valueType: string): string | st
         }
         
         throw new Error('No valid addresses found in standard decoding');
-      } catch (_) {  // Using underscore to indicate intentionally unused variable
+      } catch {  // Not capturing the error variable at all
         console.log('Standard address[] decoding failed, trying custom approach');
         
         // Try a different approach - extract any valid addresses from the data
