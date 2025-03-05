@@ -27,6 +27,7 @@ export const MetadataManager: React.FC<MetadataManagerProps> = ({
   const [isSaving, setIsSaving] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [indexOperation, setIndexOperation] = useState<{ index: number, status: 'saving' | 'success' | 'error', message?: string } | null>(null);
   
   // Validate Ethereum address
   const validateAddress = (address: string): boolean => {
@@ -47,6 +48,72 @@ export const MetadataManager: React.FC<MetadataManagerProps> = ({
       return;
     }
     setAddresses([...addresses, '']);
+  };
+  
+  // Save a specific address at a given index
+  const saveAddressAtIndex = async (index: number) => {
+    if (!isConnected || isSaving || index < 0 || index >= addresses.length) return;
+    
+    const address = addresses[index];
+    if (!validateAddress(address)) {
+      setError(`Address at position ${index + 1} is invalid`);
+      return;
+    }
+    
+    setIndexOperation({ index, status: 'saving' });
+    setError(null);
+    
+    try {
+      // Ensure we have the latest saved addresses
+      if (savedAddresses.length === 0) {
+        const result = await retrieveMyMetadata(schemaName);
+        if (result && Array.isArray(result.value)) {
+          setSavedAddresses(result.value as string[]);
+        }
+      }
+      
+      // Create a copy of saved addresses to update
+      let addressesToUpdate = [...savedAddresses];
+      
+      // If index is beyond current array length, extend the array
+      while (addressesToUpdate.length <= index) {
+        addressesToUpdate.push('0x0000000000000000000000000000000000000000');
+      }
+      
+      // Update the specific address
+      addressesToUpdate[index] = address;
+      
+      console.log(`Updating address at index ${index} to ${address}`);
+      
+      // Save the updated array
+      const txHash = await storeMetadataOnProfile(schemaName, addressesToUpdate);
+      console.log('Save successful with hash:', txHash);
+      setSavedAddresses(addressesToUpdate);
+      setIndexOperation({ index, status: 'success' });
+      
+      // Clear success status after 3 seconds
+      setTimeout(() => {
+        setIndexOperation(null);
+      }, 3000);
+    } catch (err: any) {
+      console.error(`Save at index ${index} failed:`, err);
+      setError(err.message || `Failed to save address at position ${index + 1}`);
+      setIndexOperation({ index, status: 'error', message: err.message });
+    }
+  };
+  
+  // Delete a specific address
+  const deleteAddressAtIndex = (index: number) => {
+    if (index < 0 || index >= addresses.length) return;
+    
+    const newAddresses = [...addresses];
+    newAddresses.splice(index, 1);
+    
+    if (newAddresses.length === 0) {
+      newAddresses.push(''); // Always keep at least one input field
+    }
+    
+    setAddresses(newAddresses);
   };
   
   // Save addresses to UP
@@ -122,18 +189,41 @@ export const MetadataManager: React.FC<MetadataManagerProps> = ({
       <div style={{ marginBottom: '20px' }}>
         <h2>Addresses</h2>
         {addresses.map((address, index) => (
-          <div key={index} style={{ marginBottom: '10px', display: 'flex' }}>
+          <div key={index} style={{ marginBottom: '10px', display: 'flex', alignItems: 'center' }}>
             <input
               type="text"
               value={address}
               onChange={(e) => handleAddressChange(index, e.target.value)}
               placeholder="0x..."
               style={{ 
-                width: '100%', 
+                flex: 1,
                 padding: '8px',
                 borderColor: validateAddress(address) ? 'green' : 'red'
               }}
             />
+            <div style={{ display: 'flex', marginLeft: '10px' }}>
+              <button 
+                onClick={() => saveAddressAtIndex(index)}
+                disabled={!validateAddress(address) || (indexOperation?.index === index && indexOperation?.status === 'saving')}
+                style={{ 
+                  padding: '4px 8px',
+                  background: indexOperation?.index === index && indexOperation?.status === 'success' ? 'green' : '#4299e1',
+                  color: 'white'
+                }}
+              >
+                {indexOperation?.index === index && indexOperation?.status === 'saving' 
+                  ? 'Saving...' 
+                  : indexOperation?.index === index && indexOperation?.status === 'success'
+                    ? '✓'
+                    : 'Save'}
+              </button>
+              <button 
+                onClick={() => deleteAddressAtIndex(index)}
+                style={{ padding: '4px 8px', marginLeft: '5px' }}
+              >
+                ✕
+              </button>
+            </div>
           </div>
         ))}
         
@@ -152,7 +242,7 @@ export const MetadataManager: React.FC<MetadataManagerProps> = ({
           disabled={isSaving}
           style={{ padding: '10px', background: '#4299e1', color: 'white' }}
         >
-          {isSaving ? 'Saving...' : 'Save Addresses'}
+          {isSaving ? 'Saving...' : 'Save All Addresses'}
         </button>
         
         <button 
@@ -175,8 +265,37 @@ export const MetadataManager: React.FC<MetadataManagerProps> = ({
           <h2>Saved Addresses</h2>
           <ul style={{ padding: '0', listStyle: 'none' }}>
             {savedAddresses.map((addr, i) => (
-              <li key={i} style={{ marginBottom: '5px', fontFamily: 'monospace' }}>
-                {addr}
+              <li key={i} style={{ marginBottom: '5px', fontFamily: 'monospace', display: 'flex', alignItems: 'center' }}>
+                <span style={{ marginRight: '10px' }}>{i}:</span> {addr}
+                <button 
+                  onClick={() => {
+                    // Copy this address to the editing address at the same index
+                    const newAddresses = [...addresses];
+                    // Extend the array if needed
+                    while (newAddresses.length <= i) {
+                      newAddresses.push('');
+                    }
+                    newAddresses[i] = addr;
+                    setAddresses(newAddresses);
+                    
+                    // Highlight this field visually (optional)
+                    setIndexOperation({ 
+                      index: i, 
+                      status: 'success', 
+                      message: 'Ready to edit' 
+                    });
+                    
+                    // Clear highlight after 1.5 seconds
+                    setTimeout(() => {
+                      if (indexOperation?.index === i) {
+                        setIndexOperation(null);
+                      }
+                    }, 1500);
+                  }}
+                  style={{ marginLeft: '10px', padding: '2px 5px', fontSize: '12px' }}
+                >
+                  Edit
+                </button>
               </li>
             ))}
           </ul>

@@ -343,3 +343,121 @@ export function explainAddressArrayEncoding(data: string): Record<string, string
     return { error: 'Failed to parse ABI data: ' + (error as Error).message };
   }
 }
+
+/**
+ * Decodes a specific address at the given index from an ABI-encoded address array
+ * 
+ * @param data The raw ABI-encoded data
+ * @param index The index of the address to retrieve (0-based)
+ * @returns The address at the specified index or null if not found
+ */
+export function decodeAddressAtIndex(data: string, index: number): string | null {
+  try {
+    // Guard against invalid input
+    if (!data || typeof data !== 'string' || data === '0x' || index < 0) {
+      console.log('Invalid data or index for address decoding:', data, index);
+      return null;
+    }
+
+    console.log(`Decoding address at index ${index}, raw data:`, data);
+    
+    // The format follows ABI encoding:
+    // 1. 0x + first 64 chars: offset pointer
+    // 2. Next 64 chars: Array length (at the offset position)
+    // 3. Each address padded to 32 bytes (64 chars)
+    
+    // Find the array length
+    const offsetHex = data.substring(0, 66);
+    const offset = parseInt(offsetHex.substring(2), 16);
+    console.log('Offset pointer:', offset, 'hex:', offsetHex);
+    
+    // Position where array length is stored (at the offset position)
+    const lengthPos = 2 + (offset * 2); // convert bytes to hex chars
+    
+    if (lengthPos + 64 <= data.length) {
+      const lengthHex = '0x' + data.substring(lengthPos, lengthPos + 64);
+      const arrayLength = parseInt(lengthHex.substring(2), 16);
+      console.log('Array length:', arrayLength, 'hex:', lengthHex);
+      
+      // Check if index is within range
+      if (index >= arrayLength) {
+        console.log(`Index ${index} is out of range, array length is ${arrayLength}`);
+        return null;
+      }
+      
+      // Start position of the first address (after the length field)
+      const startAddressPos = lengthPos + 64;
+      
+      // Calculate position of the requested address
+      const addrPos = startAddressPos + (index * 64);
+      
+      if (addrPos + 64 <= data.length) {
+        // Address is in the last 40 chars of the 64-char segment
+        // (20 bytes of a 32-byte word)
+        const addrHex = '0x' + data.substring(addrPos + 24, addrPos + 64);
+        
+        if (/^0x[a-fA-F0-9]{40}$/.test(addrHex) && 
+            !addrHex.startsWith('0x00000000000000000000')) {
+          try {
+            // Format with proper checksum
+            const checksumAddr = ethers.utils.getAddress(addrHex);
+            console.log(`Found valid address at index ${index}:`, checksumAddr);
+            return checksumAddr;
+          } catch {
+            console.log('Invalid checksum for address:', addrHex);
+          }
+        }
+      }
+    }
+    
+    console.log(`No valid address found at index ${index}`);
+    return null;
+  } catch (error) {
+    console.error(`Error decoding address at index ${index}:`, error);
+    return null;
+  }
+}
+
+/**
+ * Updates an address at a specific index in an ABI-encoded address array
+ * 
+ * @param data The raw ABI-encoded data
+ * @param index The index of the address to update (0-based)
+ * @param newAddress The new address to set at the specified index
+ * @returns The updated ABI-encoded data or null if the operation failed
+ */
+export function updateAddressAtIndex(data: string, index: number, newAddress: string): string | null {
+  try {
+    // Guard against invalid input
+    if (!data || typeof data !== 'string' || data === '0x' || index < 0) {
+      console.log('Invalid data or index for address update:', data, index);
+      return null;
+    }
+    
+    if (!newAddress || !/^0x[a-fA-F0-9]{40}$/.test(newAddress)) {
+      console.log('Invalid new address:', newAddress);
+      return null;
+    }
+    
+    console.log(`Updating address at index ${index} to ${newAddress}`);
+    
+    // First decode the entire array
+    const addresses = decodeAddressArray(data);
+    
+    // Check if index is within range
+    if (index >= addresses.length) {
+      console.log(`Index ${index} is out of range, array length is ${addresses.length}`);
+      return null;
+    }
+    
+    // Update the address at the specified index
+    const updatedAddresses = [...addresses];
+    updatedAddresses[index] = newAddress;
+    
+    // Re-encode the updated array
+    return encodeAddressArray(updatedAddresses);
+  } catch (error) {
+    console.error(`Error updating address at index ${index}:`, error);
+    return null;
+  }
+}
