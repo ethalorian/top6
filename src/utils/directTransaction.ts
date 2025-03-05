@@ -1,7 +1,11 @@
-// Add type declaration for window.ethereum
+// Add type declaration for window.ethereum with a more specific type
 declare global {
   interface Window {
-    ethereum?: any;
+    ethereum?: {
+      request: (args: { method: string; params?: any[] }) => Promise<unknown>;
+      isConnected?: () => boolean;
+      selectedAddress?: string;
+    };
   }
 }
 
