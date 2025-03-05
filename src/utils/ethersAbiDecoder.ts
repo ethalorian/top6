@@ -59,7 +59,7 @@ export function decodeAddressArray(data: string): string[] {
               const checksumAddr = ethers.utils.getAddress(addrHex);
               addresses.push(checksumAddr);
               console.log('Found valid address at position', i, ':', checksumAddr);
-            } catch (e) {
+            } catch {
               console.log('Invalid checksum for address:', addrHex);
             }
           }
