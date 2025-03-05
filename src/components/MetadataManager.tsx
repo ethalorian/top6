@@ -65,7 +65,7 @@ export const MetadataManager: React.FC<MetadataManagerProps> = ({
     
     try {
       // Get current addresses
-      let currentAddresses = [...savedAddresses];
+      const currentAddresses = [...savedAddresses];
       
       // Extend array if needed
       while (currentAddresses.length <= index) {
