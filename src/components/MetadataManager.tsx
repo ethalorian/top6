@@ -73,7 +73,7 @@ export const MetadataManager: React.FC<MetadataManagerProps> = ({
       }
       
       // Create a copy of saved addresses to update
-      let addressesToUpdate = [...savedAddresses];
+      const addressesToUpdate = [...savedAddresses];
       
       // If index is beyond current array length, extend the array
       while (addressesToUpdate.length <= index) {
@@ -95,10 +95,11 @@ export const MetadataManager: React.FC<MetadataManagerProps> = ({
       setTimeout(() => {
         setIndexOperation(null);
       }, 3000);
-    } catch (err: any) {
+    } catch (err: unknown) {
+      const errorMessage = err instanceof Error ? err.message : 'Unknown error';
       console.error(`Save at index ${index} failed:`, err);
-      setError(err.message || `Failed to save address at position ${index + 1}`);
-      setIndexOperation({ index, status: 'error', message: err.message });
+      setError(errorMessage || `Failed to save address at position ${index + 1}`);
+      setIndexOperation({ index, status: 'error', message: errorMessage });
     }
   };
   
