@@ -9,17 +9,116 @@ import { ethers } from 'ethers';
  */
 export function decodeAddressArray(data: string): string[] {
   try {
+    // Guard against invalid input
+    if (!data || typeof data !== 'string' || data === '0x') {
+      console.log('Empty or invalid data for address array decoding, returning empty array:', data);
+      return [];
+    }
+
     console.log('Decoding ABI address array, raw data:', data);
     
-    // The encoded data is in Ethereum ABI format for dynamic arrays:
-    // 1. First 32 bytes (offset where array data starts)
-    // 2. Location of array length (another 32 bytes)
-    // 3. Array length (32 bytes)
-    // 4. Each address (20 bytes padded to 32 bytes)
+    // First try standard ethers decoding
+    try {
+      const decoded: unknown = ethers.utils.defaultAbiCoder.decode(['address[]'], data)[0];
+      const addresses = decoded as string[];
+      
+      // Filter to only valid addresses
+      const validAddresses = addresses
+        .filter((addr: string): boolean => 
+          typeof addr === 'string' && 
+          /^0x[a-fA-F0-9]{40}$/.test(addr) &&
+          // Filter out zero addresses and other metadata
+          !addr.startsWith('0x00000000000000000000') &&
+          !addr.startsWith('0x000000000000000000000000000000000000')
+        );
+      
+      if (validAddresses.length > 0) {
+        console.log('Successfully decoded with standard ABI decoder:', validAddresses);
+        return validAddresses;
+      }
+    } catch (error) {
+      console.log('Standard ethers decoding failed, will try manual parsing:', error);
+    }
     
-    const decoded = ethers.utils.defaultAbiCoder.decode(['address[]'], data);
-    console.log('Decoded to clean address array:', decoded[0]);
-    return decoded[0];
+    // Manual parsing for LUKSO format
+    console.log('Parsing LUKSO address array format manually');
+    
+    // The format follows ABI encoding:
+    // 1. 0x + first 64 chars: offset pointer
+    // 2. Next 64 chars: Array length (at the offset position)
+    // 3. Each address padded to 32 bytes (64 chars)
+    
+    // Find the array length
+    const offsetHex: string = data.substring(0, 66);
+    const offset: number = parseInt(offsetHex.substring(2), 16);
+    console.log('Offset pointer:', offset, 'hex:', offsetHex);
+    
+    // Position where array length is stored (at the offset position)
+    const lengthPos: number = 2 + (offset * 2); // convert bytes to hex chars
+    
+    if (lengthPos + 64 <= data.length) {
+      const lengthHex: string = '0x' + data.substring(lengthPos, lengthPos + 64);
+      const arrayLength: number = parseInt(lengthHex.substring(2), 16);
+      console.log('Array length:', arrayLength, 'hex:', lengthHex);
+      
+      const addresses: string[] = [];
+      
+      // Start position of the first address (after the length field)
+      const startAddressPos: number = lengthPos + 64;
+      
+      for (let i = 0; i < arrayLength; i++) {
+        const addrPos: number = startAddressPos + (i * 64);
+        
+        if (addrPos + 64 <= data.length) {
+          // Address is in the last 40 chars of the 64-char segment
+          // (20 bytes of a 32-byte word)
+          const addrHex: string = '0x' + data.substring(addrPos + 24, addrPos + 64);
+          
+          if (/^0x[a-fA-F0-9]{40}$/.test(addrHex) && 
+              !addrHex.startsWith('0x00000000000000000000')) {
+            try {
+              // Format with proper checksum
+              const checksumAddr: string = ethers.utils.getAddress(addrHex);
+              addresses.push(checksumAddr);
+              console.log('Found valid address at position', i, ':', checksumAddr);
+            } catch (e) {
+              console.log('Invalid checksum for address:', addrHex);
+            }
+          }
+        }
+      }
+      
+      if (addresses.length > 0) {
+        console.log('Successfully extracted', addresses.length, 'addresses:', addresses);
+        return addresses;
+      }
+    }
+    
+    // Last resort - look for the specific address pattern in the data
+    const addressPattern: RegExp = /[a-fA-F0-9]{40}/g;
+    const matches: RegExpMatchArray | null = data.match(addressPattern);
+    const candidates: string[] = matches 
+      ? matches.map(match => '0x' + match)
+      : [];
+    
+    // Filter and process potential addresses
+    const validAddresses: string[] = candidates
+      .filter((addr: string): boolean => 
+        // Filter out obvious metadata
+        !addr.startsWith('0x00000000000000000000') &&
+        !addr.startsWith('0x000000000000000000000000000000000000')
+      )
+      .map((addr: string): string | null => {
+        try {
+          return ethers.utils.getAddress(addr);
+        } catch {
+          return null;
+        }
+      })
+      .filter((addr): addr is string => addr !== null);
+    
+    console.log('Addresses extracted with regex:', validAddresses);
+    return validAddresses;
   } catch (error) {
     console.error('Error decoding address array:', error);
     return [];
@@ -43,7 +142,7 @@ export function encodeAddressArray(addresses: string[]): string {
     }
     
     // Filter out any invalid or undefined addresses
-    const validAddresses = addresses.filter(address => 
+    const validAddresses: string[] = addresses.filter((address: string): boolean => 
       typeof address === 'string' && 
       /^0x[a-fA-F0-9]{40}$/.test(address)
     );
@@ -55,9 +154,9 @@ export function encodeAddressArray(addresses: string[]): string {
     
     console.log('Valid addresses for encoding:', validAddresses);
     
-    // Use try-catch to catch any BigInt conversion errors
+    // Use try-catch to catch any encoding errors
     try {
-      const encoded = ethers.utils.defaultAbiCoder.encode(['address[]'], [validAddresses]);
+      const encoded: string = ethers.utils.defaultAbiCoder.encode(['address[]'], [validAddresses]);
       console.log('Successfully encoded address array:', encoded);
       return encoded;
     } catch (encodeError) {
@@ -78,90 +177,17 @@ export function encodeAddressArray(addresses: string[]): string {
  * @returns The decoded value
  */
 export function decodeERC725YValue(data: string, valueType: string): string | string[] | number | boolean | Record<string, unknown> | null {
+  // Guard against invalid input
+  if (!data || typeof data !== 'string') {
+    console.warn('Invalid or missing data for decoding, returning default:', data, 'Type:', valueType);
+    return valueType === 'address[]' ? [] : null;
+  }
+
   try {
     // Special handling for address[] which seems to have a different format
     if (valueType === 'address[]') {
       console.log('Decoding address array, raw data:', data);
-      
-      try {
-        // First try standard decoding
-        const decoded = ethers.utils.defaultAbiCoder.decode(['address[]'], data)[0];
-        console.log('Standard decoding result:', decoded);
-        
-        // Validate addresses - only accept valid Ethereum addresses
-        const validAddresses = decoded
-          .filter((addr: string) => 
-            typeof addr === 'string' && 
-            /^0x[a-fA-F0-9]{40}$/.test(addr) &&
-            // Exclude special addresses that are actually metadata
-            !addr.startsWith('0x000000000000000000000000000000000000000')
-          );
-        
-        if (validAddresses.length > 0) {
-          console.log('Valid addresses after filtering:', validAddresses);
-          return validAddresses;
-        }
-        
-        throw new Error('No valid addresses found in standard decoding');
-      } catch {
-        console.log('Standard decoding failed, trying LUKSO specific format');
-        
-        // Based on the specific LUKSO format we're seeing:
-        // Find the valid Ethereum addresses by looking at each 32-byte chunk
-        // and filtering for addresses that don't start with many zeros
-        
-        const addresses: string[] = [];
-        
-        // Process 32-byte chunks
-        for (let i = 2; i < data.length / 64; i++) {
-          const start = i * 64;
-          const end = start + 64;
-          
-          if (end <= data.length) {
-            const chunk = data.substring(start, end);
-            console.log('Processing chunk:', chunk);
-            
-            // Try both formats - addresses can be right-padded or left-padded
-            
-            // Format 1: Address in the last 20 bytes (right-aligned, left-padded with zeros)
-            // This is the standard Ethereum encoding
-            const addressCandidate1 = '0x' + chunk.substring(chunk.length - 40);
-            
-            // Format 2: Address in the first 20 bytes (left-aligned, right-padded with zeros)
-            // Some implementations use this format
-            const addressCandidate2 = '0x' + chunk.substring(0, 40);
-            
-            console.log('Candidates:', addressCandidate1, addressCandidate2);
-            
-            // Check both candidates
-            [addressCandidate1, addressCandidate2].forEach(candidate => {
-              if (/^0x[a-fA-F0-9]{40}$/.test(candidate)) {
-                // Skip obvious metadata/special addresses
-                if (candidate.startsWith('0x00000000000000000000000000000000000000')) {
-                  console.log('Skipping metadata address:', candidate);
-                  return;
-                }
-                
-                try {
-                  // Use ethers.utils.getAddress to properly format with checksum
-                  const checksumAddress = ethers.utils.getAddress(candidate);
-                  
-                  // Only add if we don't already have this address
-                  if (!addresses.includes(checksumAddress)) {
-                    addresses.push(checksumAddress);
-                    console.log('Valid address found:', checksumAddress);
-                  }
-                } catch (error) {
-                  console.log('Invalid checksum for address:', candidate, error);
-                }
-              }
-            });
-          }
-        }
-        
-        console.log('LUKSO format addresses:', addresses);
-        return addresses;
-      }
+      return decodeAddressArray(data);
     }
     
     // Handle other types
@@ -178,25 +204,28 @@ export function decodeERC725YValue(data: string, valueType: string): string | st
     
     // Handle tuples
     if (valueType.startsWith('(') && valueType.endsWith(')')) {
-      const innerTypes = valueType.slice(1, -1).split(',');
-      const abiTypes = innerTypes.map(t => abiTypeMap[t] || t);
+      const innerTypes: string[] = valueType.slice(1, -1).split(',');
+      const abiTypes: string[] = innerTypes.map((t: string): string => abiTypeMap[t] || t);
       return ethers.utils.defaultAbiCoder.decode(abiTypes, data);
     }
     
     // Handle arrays
     if (valueType.endsWith('[]')) {
-      const baseType = valueType.slice(0, -2);
-      const abiType = abiTypeMap[baseType] ? `${abiTypeMap[baseType]}[]` : valueType;
-      return ethers.utils.defaultAbiCoder.decode([abiType], data)[0];
+      const baseType: string = valueType.slice(0, -2);
+      const abiType: string = abiTypeMap[baseType] ? `${abiTypeMap[baseType]}[]` : valueType;
+      const decoded: unknown = ethers.utils.defaultAbiCoder.decode([abiType], data)[0];
+      return decoded as string[] | number[] | boolean[];
     }
     
     // Handle basic types
-    const abiType = abiTypeMap[valueType] || valueType;
-    return ethers.utils.defaultAbiCoder.decode([abiType], data)[0];
+    const abiType: string = abiTypeMap[valueType] || valueType;
+    console.log('Decoding basic type:', abiType, 'with data:', data);
+    const decoded: unknown = ethers.utils.defaultAbiCoder.decode([abiType], data)[0];
+    return decoded as string | number | boolean;
   } catch (error) {
     console.error(`Error decoding value with type ${valueType}:`, error);
     console.error('Raw data:', data);
-    return null;
+    return valueType === 'address[]' ? [] : null; // Safe default based on type
   }
 }
 
@@ -217,7 +246,7 @@ export function encodeERC725YValue(value: string | string[] | number | boolean |
       return '0x';
     }
     
-    // Special handling for address[] to prevent BigInt errors
+    // Special handling for address[] to prevent encoding errors
     if (valueType === 'address[]') {
       if (!Array.isArray(value)) {
         console.error('Expected array for address[] type but got:', typeof value);
@@ -241,11 +270,11 @@ export function encodeERC725YValue(value: string | string[] | number | boolean |
     
     // Handle tuples
     if (valueType.startsWith('(') && valueType.endsWith(')')) {
-      const innerTypes = valueType.slice(1, -1).split(',');
-      const abiTypes = innerTypes.map(t => abiTypeMap[t] || t);
+      const innerTypes: string[] = valueType.slice(1, -1).split(',');
+      const abiTypes: string[] = innerTypes.map((t: string): string => abiTypeMap[t] || t);
       
       // Ensure value is properly formatted
-      const tupleValue = Array.isArray(value) ? value : [value];
+      const tupleValue: unknown[] = Array.isArray(value) ? value : [value];
       console.log('Encoding tuple with types:', abiTypes, 'and values:', tupleValue);
       
       return ethers.utils.defaultAbiCoder.encode(abiTypes, tupleValue);
@@ -253,8 +282,8 @@ export function encodeERC725YValue(value: string | string[] | number | boolean |
     
     // Handle arrays
     if (valueType.endsWith('[]')) {
-      const baseType = valueType.slice(0, -2);
-      const abiType = abiTypeMap[baseType] ? `${abiTypeMap[baseType]}[]` : valueType;
+      const baseType: string = valueType.slice(0, -2);
+      const abiType: string = abiTypeMap[baseType] ? `${abiTypeMap[baseType]}[]` : valueType;
       
       // Ensure value is an array
       if (!Array.isArray(value)) {
@@ -263,14 +292,14 @@ export function encodeERC725YValue(value: string | string[] | number | boolean |
       }
       
       // Filter out invalid values
-      const validValues = value.filter(v => v !== undefined && v !== null);
+      const validValues: (string | number | boolean)[] = value.filter((v): v is string | number | boolean => v !== undefined && v !== null);
       console.log('Encoding array with type:', abiType, 'and values:', validValues);
       
       return ethers.utils.defaultAbiCoder.encode([abiType], [validValues]);
     }
     
     // Handle basic types
-    const abiType = abiTypeMap[valueType] || valueType;
+    const abiType: string = abiTypeMap[valueType] || valueType;
     console.log('Encoding basic type:', abiType, 'with value:', value);
     
     return ethers.utils.defaultAbiCoder.encode([abiType], [value]);
@@ -288,26 +317,19 @@ export function encodeERC725YValue(value: string | string[] | number | boolean |
  * @returns An explanation object with component parts
  */
 export function explainAddressArrayEncoding(data: string): Record<string, string> {
-  if (!data.startsWith('0x') || data.length < 194) {
-    return { error: 'Invalid ABI data format' };
+  if (!data || typeof data !== 'string' || data.length < 194) {
+    return { error: 'Invalid or insufficient ABI data format' };
   }
   
-  // The standard layout for an ABI-encoded address[] is:
-  // 1. First 32 bytes (0x + 64 chars): Offset pointer
-  // 2. Next 32 bytes: Usually a second offset
-  // 3. Next 32 bytes: Additional metadata or array length
-  // 4. Next 32 bytes: Array length
-  // 5. Remaining 32-byte chunks: The addresses (padded to 32 bytes each)
-  
   try {
-    const offsetHex = data.substring(0, 66);
-    const offset = parseInt(offsetHex, 16);
+    const offsetHex: string = data.substring(0, 66);
+    const offset: number = parseInt(offsetHex, 16);
     
-    const secondOffsetHex = data.substring(66, 130);
-    const secondOffset = parseInt(secondOffsetHex, 16);
+    const secondOffsetHex: string = data.substring(66, 130);
+    const secondOffset: number = parseInt(secondOffsetHex, 16);
     
     // Try to find where the array length might be stored
-    let lengthPosition = 130;
+    let lengthPosition: number = 130;
     if (offset === 32) {
       // Common case: offset is 32, array data starts at position 32 bytes (64 hex chars + 2 for '0x') into the data
       lengthPosition = 66;
@@ -316,16 +338,16 @@ export function explainAddressArrayEncoding(data: string): Record<string, string
       lengthPosition = 194;
     }
     
-    const lengthHex = data.substring(lengthPosition, lengthPosition + 64);
-    const arrayLength = parseInt(lengthHex, 16);
+    const lengthHex: string = data.substring(lengthPosition, lengthPosition + 64);
+    const arrayLength: number = parseInt(lengthHex, 16);
     
     // Extract addresses
     const addresses: string[] = [];
-    const startOfAddresses = lengthPosition + 64;
+    const startOfAddresses: number = lengthPosition + 64;
     
     for (let i = 0; i < arrayLength; i++) {
-      const startIndex = startOfAddresses + (i * 64);
-      const addressHex = '0x' + data.substring(startIndex + 24, startIndex + 64);
+      const startIndex: number = startOfAddresses + (i * 64);
+      const addressHex: string = '0x' + data.substring(startIndex + 24, startIndex + 64);
       addresses.push(addressHex);
     }
     
