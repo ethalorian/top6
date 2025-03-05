@@ -34,7 +34,36 @@ export function decodeAddressArray(data: string): string[] {
  */
 export function encodeAddressArray(addresses: string[]): string {
   try {
-    return ethers.utils.defaultAbiCoder.encode(['address[]'], [addresses]);
+    console.log('Encoding address array:', addresses);
+    
+    // Validate addresses before encoding
+    if (!Array.isArray(addresses)) {
+      console.error('Invalid addresses format - not an array:', addresses);
+      return '0x';
+    }
+    
+    // Filter out any invalid or undefined addresses
+    const validAddresses = addresses.filter(address => 
+      typeof address === 'string' && 
+      /^0x[a-fA-F0-9]{40}$/.test(address)
+    );
+    
+    if (validAddresses.length === 0) {
+      console.error('No valid addresses to encode');
+      return '0x';
+    }
+    
+    console.log('Valid addresses for encoding:', validAddresses);
+    
+    // Use try-catch to catch any BigInt conversion errors
+    try {
+      const encoded = ethers.utils.defaultAbiCoder.encode(['address[]'], [validAddresses]);
+      console.log('Successfully encoded address array:', encoded);
+      return encoded;
+    } catch (encodeError) {
+      console.error('Error during ABI encoding:', encodeError);
+      return '0x';
+    }
   } catch (error) {
     console.error('Error encoding address array:', error);
     return '0x';
@@ -162,13 +191,25 @@ export function decodeERC725YValue(data: string, valueType: string): string | st
  */
 export function encodeERC725YValue(value: string | string[] | number | boolean | Record<string, unknown> | null, valueType: string): string {
   try {
-    // Handle null values
-    if (value === null) {
-      // For null values, return an empty bytes value
+    console.log('Encoding value:', value, 'with type:', valueType);
+    
+    // Handle null or undefined values
+    if (value === null || value === undefined) {
+      console.log('Encoding null/undefined value as empty bytes');
       return '0x';
     }
     
-    // Convert ERC725Y valueType to ethers ABI type (same mapping as above)
+    // Special handling for address[] to prevent BigInt errors
+    if (valueType === 'address[]') {
+      if (!Array.isArray(value)) {
+        console.error('Expected array for address[] type but got:', typeof value);
+        return '0x';
+      }
+      
+      return encodeAddressArray(value as string[]);
+    }
+    
+    // Convert ERC725Y valueType to ethers ABI type
     const abiTypeMap: Record<string, string> = {
       'address': 'address',
       'address[]': 'address[]',
@@ -184,18 +225,36 @@ export function encodeERC725YValue(value: string | string[] | number | boolean |
     if (valueType.startsWith('(') && valueType.endsWith(')')) {
       const innerTypes = valueType.slice(1, -1).split(',');
       const abiTypes = innerTypes.map(t => abiTypeMap[t] || t);
-      return ethers.utils.defaultAbiCoder.encode(abiTypes, Array.isArray(value) ? value : [value]);
+      
+      // Ensure value is properly formatted
+      const tupleValue = Array.isArray(value) ? value : [value];
+      console.log('Encoding tuple with types:', abiTypes, 'and values:', tupleValue);
+      
+      return ethers.utils.defaultAbiCoder.encode(abiTypes, tupleValue);
     }
     
     // Handle arrays
     if (valueType.endsWith('[]')) {
       const baseType = valueType.slice(0, -2);
       const abiType = abiTypeMap[baseType] ? `${abiTypeMap[baseType]}[]` : valueType;
-      return ethers.utils.defaultAbiCoder.encode([abiType], [value]);
+      
+      // Ensure value is an array
+      if (!Array.isArray(value)) {
+        console.error('Expected array for type', valueType, 'but got:', typeof value);
+        return '0x';
+      }
+      
+      // Filter out invalid values
+      const validValues = value.filter(v => v !== undefined && v !== null);
+      console.log('Encoding array with type:', abiType, 'and values:', validValues);
+      
+      return ethers.utils.defaultAbiCoder.encode([abiType], [validValues]);
     }
     
     // Handle basic types
     const abiType = abiTypeMap[valueType] || valueType;
+    console.log('Encoding basic type:', abiType, 'with value:', value);
+    
     return ethers.utils.defaultAbiCoder.encode([abiType], [value]);
   } catch (error) {
     console.error(`Error encoding value with type ${valueType}:`, error);
@@ -266,4 +325,5 @@ export function explainAddressArrayEncoding(data: string): Record<string, string
     console.error('Error explaining ABI data:', error);
     return { error: 'Failed to parse ABI data: ' + (error as Error).message };
   }
+}
 }
