@@ -1,7 +1,7 @@
 // MetadataManager.tsx - React component for managing UP metadata
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useUPMetadata } from '../hooks/useUPMetadata';
 
 interface Address {
@@ -13,12 +13,14 @@ interface MetadataManagerProps {
   title?: string;
   schemaName?: string;
   maxAddresses?: number;
+  className?: string;
 }
 
 export const MetadataManager: React.FC<MetadataManagerProps> = ({
   title = 'Universal Profile Metadata',
   schemaName = 'MyTopAccounts',
-  maxAddresses = 5,
+  maxAddresses = 6,
+  className = '',
 }) => {
   const {
     storeMetadataOnProfile,
@@ -34,6 +36,15 @@ export const MetadataManager: React.FC<MetadataManagerProps> = ({
     { value: '', valid: false }
   ]);
   const [savedAddresses, setSavedAddresses] = useState<string[]>([]);
+  const [loadAttempted, setLoadAttempted] = useState(false);
+
+  // Load addresses on initial mount if connected
+  useEffect(() => {
+    if (isConnected && !loadAttempted) {
+      loadAddresses();
+      setLoadAttempted(true);
+    }
+  }, [isConnected]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Validate Ethereum address
   const validateAddress = (address: string): boolean => {
@@ -118,100 +129,185 @@ export const MetadataManager: React.FC<MetadataManagerProps> = ({
 
   if (!isConnected) {
     return (
-      <div className="p-4 border rounded">
-        <h2 className="text-lg font-bold mb-2">{title}</h2>
-        <p className="text-red-500">Please connect your Universal Profile to manage metadata</p>
+      <div className={`bg-white shadow-md rounded-lg p-6 ${className}`}>
+        <h2 className="text-xl font-bold mb-4 text-gray-800">{title}</h2>
+        <div className="bg-blue-50 border-l-4 border-blue-500 p-4 rounded">
+          <div className="flex items-center">
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-blue-500 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+            <p className="text-blue-700">Please connect your Universal Profile to manage metadata</p>
+          </div>
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="p-4 border rounded">
-      <h2 className="text-lg font-bold mb-2">{title}</h2>
+    <div className={`bg-white shadow-md rounded-lg p-6 ${className}`}>
+      <h2 className="text-xl font-bold mb-4 text-gray-800">{title}</h2>
       
-      <div className="mb-4">
-        <p className="text-sm mb-1">Connected Profile:</p>
-        <p className="font-mono text-sm bg-gray-100 p-1 rounded">{profileAddress}</p>
+      {/* Connected Profile */}
+      <div className="mb-6 bg-gray-50 p-4 rounded-lg border border-gray-200">
+        <p className="text-sm font-medium text-gray-600 mb-2">Connected Profile:</p>
+        <div className="flex items-center">
+          <div className="w-8 h-8 bg-gradient-to-r from-purple-500 to-indigo-600 rounded-full mr-2"></div>
+          <p className="font-mono text-sm bg-gray-100 p-2 rounded flex-1 truncate">{profileAddress}</p>
+        </div>
       </div>
       
-      <div className="mb-4">
-        <h3 className="font-semibold mb-2">Manage Addresses</h3>
+      {/* Address Management */}
+      <div className="mb-6">
+        <h3 className="text-lg font-semibold mb-3 text-gray-700">Manage Addresses</h3>
         
-        {addresses.map((address, index) => (
-          <div key={index} className="flex items-center gap-2 mb-2">
-            <input
-              type="text"
-              value={address.value}
-              onChange={(e) => handleAddressChange(index, e.target.value)}
-              className={`flex-1 p-1 border rounded ${
-                address.value && !address.valid ? 'border-red-500' : ''
-              }`}
-              placeholder="0x..."
-            />
-            <button
-              onClick={() => removeAddressField(index)}
-              disabled={addresses.length <= 1}
-              className="px-2 py-1 bg-red-100 text-red-700 rounded disabled:opacity-50"
-            >
-              -
-            </button>
-          </div>
-        ))}
+        <div className="space-y-3">
+          {addresses.map((address, index) => (
+            <div key={index} className="flex items-center gap-2">
+              <div className="flex-1 relative">
+                <input
+                  type="text"
+                  value={address.value}
+                  onChange={(e) => handleAddressChange(index, e.target.value)}
+                  className={`w-full p-2 pr-10 border rounded-lg focus:ring-2 focus:outline-none transition-colors
+                    ${address.value && !address.valid
+                      ? 'border-red-300 focus:border-red-500 focus:ring-red-200'
+                      : address.value && address.valid
+                        ? 'border-green-300 focus:border-green-500 focus:ring-green-200'
+                        : 'border-gray-300 focus:border-indigo-500 focus:ring-indigo-200'
+                    }`}
+                  placeholder="0x..."
+                />
+                {address.value && (
+                  <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
+                    {address.valid ? (
+                      <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-green-500" viewBox="0 0 20 20" fill="currentColor">
+                        <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                      </svg>
+                    ) : (
+                      <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-red-500" viewBox="0 0 20 20" fill="currentColor">
+                        <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
+                      </svg>
+                    )}
+                  </div>
+                )}
+              </div>
+              <button
+                onClick={() => removeAddressField(index)}
+                disabled={addresses.length <= 1}
+                className="h-10 w-10 flex items-center justify-center rounded-lg border border-gray-300 
+                  hover:bg-red-50 disabled:opacity-50 disabled:hover:bg-transparent
+                  text-red-600 disabled:text-gray-400 transition-colors"
+                aria-label="Remove address"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                  <path fillRule="evenodd" d="M3 10a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1z" clipRule="evenodd" />
+                </svg>
+              </button>
+            </div>
+          ))}
+        </div>
         
         {addresses.length < maxAddresses && (
           <button
             onClick={addAddressField}
-            className="px-2 py-1 bg-blue-100 text-blue-700 rounded mt-1"
+            className="mt-3 flex items-center justify-center w-full p-2 border border-dashed border-gray-300 
+              rounded-lg text-indigo-600 hover:bg-indigo-50 hover:border-indigo-300 transition-colors"
           >
-            + Add Address
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-1" viewBox="0 0 20 20" fill="currentColor">
+              <path fillRule="evenodd" d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z" clipRule="evenodd" />
+            </svg>
+            Add Address
           </button>
         )}
       </div>
       
-      <div className="flex gap-2 mb-4">
+      {/* Action Buttons */}
+      <div className="flex gap-3 mb-6">
         <button
           onClick={saveAddresses}
           disabled={loading || !addresses.some(addr => addr.valid)}
-          className="px-3 py-1 bg-blue-500 text-white rounded disabled:opacity-50"
+          className="flex-1 py-2 px-4 bg-indigo-600 hover:bg-indigo-700 disabled:bg-indigo-300
+            text-white font-medium rounded-lg transition-colors focus:outline-none focus:ring-2 
+            focus:ring-indigo-500 focus:ring-offset-2 shadow-sm"
         >
-          {loading ? 'Saving...' : 'Save to Profile'}
+          {loading ? (
+            <span className="flex items-center justify-center">
+              <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+              </svg>
+              Saving...
+            </span>
+          ) : 'Save to Profile'}
         </button>
         
         <button
           onClick={loadAddresses}
           disabled={loading}
-          className="px-3 py-1 bg-gray-200 rounded disabled:opacity-50"
+          className="flex-1 py-2 px-4 bg-gray-100 hover:bg-gray-200 disabled:bg-gray-50
+            text-gray-800 disabled:text-gray-400 font-medium rounded-lg transition-colors 
+            focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 shadow-sm"
         >
-          {loading ? 'Loading...' : 'Load from Profile'}
+          {loading ? (
+            <span className="flex items-center justify-center">
+              <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-gray-800" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+              </svg>
+              Loading...
+            </span>
+          ) : 'Load from Profile'}
         </button>
       </div>
       
+      {/* Status Messages */}
       {error && (
-        <div className="p-2 bg-red-100 text-red-700 rounded mb-4">
-          Error: {error}
+        <div className="mb-6 bg-red-50 border-l-4 border-red-500 p-4 rounded-md flex items-start">
+          <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-red-500 mr-2 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+          </svg>
+          <div>
+            <h4 className="text-sm font-medium text-red-800">Error</h4>
+            <p className="text-sm text-red-700 mt-1">{error}</p>
+          </div>
         </div>
       )}
       
       {txHash && (
-        <div className="p-2 bg-green-100 text-green-700 rounded mb-4">
-          Transaction successful: 
-          <a 
-            href={`https://explorer.lukso.network/tx/${txHash}`}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="underline ml-1"
-          >
-            View transaction
-          </a>
+        <div className="mb-6 bg-green-50 border-l-4 border-green-500 p-4 rounded-md flex items-start">
+          <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-green-500 mr-2 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+          </svg>
+          <div>
+            <h4 className="text-sm font-medium text-green-800">Transaction successful</h4>
+            <p className="text-sm text-green-700 mt-1">
+              <a 
+                href={`https://explorer.lukso.network/tx/${txHash}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="underline hover:text-green-800 transition-colors"
+              >
+                View transaction on LUKSO Explorer
+              </a>
+            </p>
+          </div>
         </div>
       )}
       
+      {/* Saved Addresses */}
       {savedAddresses.length > 0 && (
-        <div>
-          <h3 className="font-semibold mb-2">Saved Addresses:</h3>
-          <ul className="bg-gray-50 p-2 rounded">
+        <div className="bg-gray-50 rounded-lg border border-gray-200 p-4">
+          <h3 className="text-lg font-semibold mb-3 text-gray-700">Saved Addresses</h3>
+          <ul className="divide-y divide-gray-200">
             {savedAddresses.map((addr, i) => (
-              <li key={i} className="font-mono text-sm">{addr}</li>
+              <li key={i} className="py-3 first:pt-0 last:pb-0 flex items-center">
+                <div className="w-6 h-6 bg-indigo-100 text-indigo-700 rounded-full flex items-center justify-center mr-3 flex-shrink-0">
+                  {i + 1}
+                </div>
+                <div className="font-mono text-sm bg-white p-2 rounded border border-gray-200 flex-1 truncate hover:text-clip transition-all">
+                  {addr}
+                </div>
+              </li>
             ))}
           </ul>
         </div>
