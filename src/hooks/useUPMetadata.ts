@@ -46,7 +46,11 @@ export interface MetadataAction {
  */
 export function useUPMetadata() {
   const { provider, accounts, profileConnected } = useUPProvider();
-  const [state, setState] = useState<MetadataAction>({
+  const [state, setState] = useState<{
+    loading: boolean;
+    error: string | null;
+    txHash: string | null;
+  }>({
     loading: false,
     error: null,
     txHash: null,
@@ -112,10 +116,12 @@ export function useUPMetadata() {
         );
         
         console.log('Transaction submitted:', tx);
+        setState({ loading: true, error: null, txHash: tx.hash }); // Keep loading true until confirmed
+        
         const receipt = await tx.wait();
         console.log('Transaction confirmed:', receipt);
         
-        setState({ loading: false, error: null, txHash: tx.hash });
+        setState({ loading: false, error: null, txHash: tx.hash }); // Set loading to false when done
         return tx.hash;
       } catch (txError: unknown) {
         console.error('Transaction failed:', txError);
@@ -305,12 +311,21 @@ export function useUPMetadata() {
   /**
    * Retrieve metadata from the connected Universal Profile
    */
-  const retrieveMyMetadata = async (keyOrName: string): Promise<DecodedData> => {
+  const retrieveMyMetadata = async (keyOrName: string): Promise<DecodedData | null> => {
     if (!profileConnected || accounts.length === 0) {
       throw new Error('No Universal Profile connected');
     }
     
-    return retrieveMetadataFromProfile(accounts[0], keyOrName);
+    setState({ loading: true, error: null, txHash: null });
+    
+    try {
+      return await retrieveMetadataFromProfile(accounts[0], keyOrName);
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      console.error('Error retrieving metadata:', error);
+      setState({ loading: false, error: errorMessage, txHash: null });
+      throw error;
+    }
   };
   
   return {

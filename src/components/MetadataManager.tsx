@@ -77,7 +77,7 @@ export const MetadataManager: React.FC<MetadataManagerProps> = ({
 
   // Save addresses to UP
   const saveAddresses = async () => {
-    if (!isConnected) return;
+    if (!isConnected || loading) return; // Prevent multiple clicks
     
     const validAddresses = addresses
       .filter(addr => addr.valid)
@@ -89,12 +89,16 @@ export const MetadataManager: React.FC<MetadataManagerProps> = ({
     }
     
     try {
+      console.log('Starting save operation...');
       const txHash = await storeMetadataOnProfile(schemaName, validAddresses);
       console.log('Transaction successful:', txHash);
-      setSavedAddresses(validAddresses);
+      
+      // Force a re-render after a short delay
+      setTimeout(() => {
+        setSavedAddresses(validAddresses);
+      }, 500);
     } catch (error) {
       console.error('Failed to save addresses:', error);
-      // Error is already handled in the hook
     }
   };
 
