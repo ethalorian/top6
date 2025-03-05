@@ -1,7 +1,7 @@
 // MetadataManager.tsx - React component for managing UP metadata
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useUPMetadata } from '../hooks/useUPMetadata';
 
 interface MetadataManagerProps {
@@ -65,15 +65,23 @@ export const MetadataManager: React.FC<MetadataManagerProps> = ({
     
     try {
       // Ensure we have the latest saved addresses
+      let currentAddresses: string[] = [];
       if (savedAddresses.length === 0) {
-        const result = await retrieveMyMetadata(schemaName);
-        if (result && Array.isArray(result.value)) {
-          setSavedAddresses(result.value as string[]);
+        try {
+          const result = await retrieveMyMetadata(schemaName);
+          if (result && Array.isArray(result.value)) {
+            currentAddresses = result.value as string[];
+            setSavedAddresses(currentAddresses);
+          }
+        } catch (loadErr) {
+          console.warn('Could not load current addresses, using empty array:', loadErr);
         }
+      } else {
+        currentAddresses = [...savedAddresses];
       }
       
       // Create a copy of saved addresses to update
-      const addressesToUpdate = [...savedAddresses];
+      const addressesToUpdate = [...currentAddresses];
       
       // If index is beyond current array length, extend the array
       while (addressesToUpdate.length <= index) {
@@ -85,21 +93,36 @@ export const MetadataManager: React.FC<MetadataManagerProps> = ({
       
       console.log(`Updating address at index ${index} to ${address}`);
       
-      // Save the updated array
-      const txHash = await storeMetadataOnProfile(schemaName, addressesToUpdate);
-      console.log('Save successful with hash:', txHash);
-      setSavedAddresses(addressesToUpdate);
-      setIndexOperation({ index, status: 'success' });
-      
-      // Clear success status after 3 seconds
-      setTimeout(() => {
-        setIndexOperation(null);
-      }, 3000);
+      // Save the updated array - handle BigInt serialization issues
+      try {
+        const txHash = await storeMetadataOnProfile(schemaName, addressesToUpdate);
+        console.log('Save successful with hash:', txHash);
+        setSavedAddresses(addressesToUpdate);
+        setIndexOperation({ index, status: 'success' });
+        
+        // Clear success status after 3 seconds
+        setTimeout(() => {
+          setIndexOperation(null);
+        }, 3000);
+      } catch (txErr: unknown) {
+        console.error('Transaction error:', txErr);
+        const errMessage = txErr instanceof Error ? txErr.message : String(txErr);
+        throw new Error(`Transaction failed: ${errMessage}`);
+      }
     } catch (err: unknown) {
       const errorMessage = err instanceof Error ? err.message : 'Unknown error';
       console.error(`Save at index ${index} failed:`, err);
+      
+      // Make sure to reset the saving state
       setError(errorMessage || `Failed to save address at position ${index + 1}`);
       setIndexOperation({ index, status: 'error', message: errorMessage });
+      
+      // Force UI update in case of BigInt serialization errors
+      setTimeout(() => {
+        if (indexOperation?.index === index && indexOperation?.status === 'saving') {
+          setIndexOperation(null);
+        }
+      }, 5000);
     }
   };
   
@@ -176,6 +199,21 @@ export const MetadataManager: React.FC<MetadataManagerProps> = ({
         setIsLoading(false);
       });
   };
+
+  // Add a safety timeout for the indexOperation
+  useEffect(() => {
+    // If any operation is "saving" for more than 30 seconds, reset it
+    // This prevents UI getting stuck in "saving" state
+    if (indexOperation?.status === 'saving') {
+      const timer = setTimeout(() => {
+        console.log('Operation timeout - resetting state');
+        setIndexOperation(null);
+        setError('Operation timed out. Please try again.');
+      }, 30000);
+      
+      return () => clearTimeout(timer);
+    }
+  }, [indexOperation]);
 
   return (
     <div style={{ padding: '20px', maxWidth: '600px', margin: '0 auto' }}>
