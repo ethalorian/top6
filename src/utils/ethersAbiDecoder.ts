@@ -197,7 +197,7 @@ export function decodeERC725YValue(data: string, valueType: string): string | st
       'uint256': 'uint256',
       'uint128': 'uint128',
       'bytes32': 'bytes32',
-      'bytes': 'bytes',
+      'bytes': 'string', // Changed to 'string' to match ethers ABI coder expectations
       'string': 'string',
       'bool': 'bool'
     };
@@ -292,8 +292,8 @@ export function encodeERC725YValue(value: string | string[] | number | boolean |
         return '0x';
       }
       
-      // Filter out invalid values
-      const validValues: (string | number | boolean)[] = value.filter((v): v is string | number | boolean => v !== undefined && v !== null);
+      // Filter out invalid values and assert the array type
+      const validValues = (value as (string | number | boolean)[]).filter(v => v !== undefined && v !== null);
       console.log('Encoding array with type:', abiType, 'and values:', validValues);
       
       return ethers.utils.defaultAbiCoder.encode([abiType], [validValues]);
