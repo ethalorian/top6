@@ -8,6 +8,15 @@ import { ProfilePanel } from "@/components/ProfilePanel"
 import { ChevronLeft } from "lucide-react"
 import { Button } from "@/components/ui/button"
 
+type UserWithProfile = {
+  username: string;
+  avatar: string;
+  hasData: boolean;
+  headerImage: string;
+  badges: string[];
+  description: string;
+}
+
 export default function Top6Page() {
   const [showSearchPanel, setShowSearchPanel] = useState(false)
   const [selectedUser, setSelectedUser] = useState<number | null>(null)
@@ -121,7 +130,7 @@ export default function Top6Page() {
               <div className="h-full flex items-center w-full" ref={popoverRef}>
                 {selectedUser !== null ? (
                   <div className="w-full h-full px-0">
-                    <ProfilePanel user={users[selectedUser] as any} />
+                    <ProfilePanel user={users[selectedUser] as UserWithProfile} />
                   </div>
                 ) : showSearchPanel ? (
                   <div className="w-full h-full px-0">

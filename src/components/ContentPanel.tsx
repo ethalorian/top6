@@ -1,10 +1,17 @@
 import { Button } from "@/components/ui/button"
+import Image from 'next/image'
 
 export function ContentPanel() {
   return (
     <div className="space-y-8 w-full">
       <div className="w-80">
-        <img src="/top-6-logo.svg" alt="TOP 6" className="w-full" />
+        <Image 
+          src="/top6-logo.svg" 
+          alt="TOP 6" 
+          width={320}
+          height={120}
+          className="w-full"
+        />
       </div>
 
       <div className="space-y-4">
