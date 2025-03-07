@@ -145,10 +145,12 @@ export default function Top6Page() {
 
               {/* Right side grid */}
               <div 
-                className="flex flex-col h-full px-16 pr-2 py-2 overflow-hidden" 
+                className="flex flex-col px-16 pr-2 overflow-hidden" 
                 ref={cardsContainerRef}
                 style={{
-                  marginBottom: '40px', /* Increased margin at the bottom of the window */
+                  height: 'calc(100% - 50px)', /* Reserve space for bottom margin */
+                  paddingTop: '10px',
+                  paddingBottom: '10px',
                 }}
               >
                 <div className="h-full flex flex-col justify-between space-y-4">
