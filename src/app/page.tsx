@@ -145,27 +145,28 @@ export default function Top6Page() {
 
               {/* Right side grid */}
               <div 
-                className="flex flex-col justify-between h-full px-16 pr-2 py-2 overflow-hidden" 
+                className="flex flex-col h-full px-16 pr-2 py-2 overflow-hidden" 
                 ref={cardsContainerRef}
                 style={{
-                  gap: '16px', /* Increased padding between cards */
-                  marginBottom: '20px' /* Clear margin at the bottom of the window */
+                  marginBottom: '20px', /* Clear margin at the bottom of the window */
                 }}
               >
-                {users.map((user, index) => (
-                  <div key={index} className="relative flex-1 min-h-0">
-                    <UserCard
-                      username={user.username}
-                      avatar={user.avatar}
-                      hasData={user.hasData}
-                      isSelected={selectedUser === index}
-                      onClick={() => handleCardClick(index)}
-                      className={
-                        selectedUser === index ? "-ml-14 transition-all duration-300" : "transition-all duration-300"
-                      }
-                    />
-                  </div>
-                ))}
+                <div className="h-full flex flex-col justify-between space-y-4">
+                  {users.map((user, index) => (
+                    <div key={index} className="relative text-sm">
+                      <UserCard
+                        username={user.username}
+                        avatar={user.avatar}
+                        hasData={user.hasData}
+                        isSelected={selectedUser === index}
+                        onClick={() => handleCardClick(index)}
+                        className={`text-sm ${
+                          selectedUser === index ? "-ml-14 transition-all duration-300" : "transition-all duration-300"
+                        }`}
+                      />
+                    </div>
+                  ))}
+                </div>
               </div>
             </div>
           </div>
