@@ -120,10 +120,20 @@ export default function Top6Page() {
         <div className="flex-1 px-[0.67%] overflow-hidden">
           <div className="h-full mx-auto max-w-[1400px] aspect-[395.556/290]">
             <div className="h-full flex">
-              <div className="h-full w-1/2 flex py-[3%] px-[1.5%] relative flex-col" ref={popoverRef}>
-                <div className="flex-1 flex flex-col justify-end">
+              <div className="h-full w-1/2 flex py-[3%] px-[1.5%] relative" ref={popoverRef}>
+                <div className="h-full flex flex-col w-full">
                   {selectedUser !== null ? (
-                    <ProfilePanel user={users[selectedUser] as UserWithProfile} />
+                    users[selectedUser].hasData ? (
+                      <ProfilePanel user={users[selectedUser] as UserWithProfile} />
+                    ) : (
+                      <div className="bg-white rounded-sm h-full flex flex-col justify-center items-center w-full p-8 text-center">
+                        <h2 className="text-[#0f172a] text-2xl font-medium mb-4">No Profile Data</h2>
+                        <p className="text-[#64748b] text-lg mb-8">This user doesn't have a profile yet.</p>
+                        <Button className="bg-[#4a044e] hover:bg-[#3a033e] text-white rounded-sm h-12 px-8 text-lg">
+                          Add Profile
+                        </Button>
+                      </div>
+                    )
                   ) : showSearchPanel ? (
                     <SearchPanel onCancel={resetPopovers} />
                   ) : (
