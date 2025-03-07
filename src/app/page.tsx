@@ -128,7 +128,7 @@ export default function Top6Page() {
                     ) : (
                       <div className="bg-white rounded-sm h-full flex flex-col justify-center items-center w-full p-8 text-center">
                         <h2 className="text-[#0f172a] text-2xl font-medium mb-4">No Profile Data</h2>
-                        <p className="text-[#64748b] text-lg mb-8">This user doesn't have a profile yet.</p>
+                        <p className="text-[#64748b] text-lg mb-8">This user doesn&apos;t have a profile yet.</p>
                         <Button className="bg-[#4a044e] hover:bg-[#3a033e] text-white rounded-sm h-12 px-8 text-lg">
                           Add Profile
                         </Button>
