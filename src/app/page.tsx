@@ -145,15 +145,15 @@ export default function Top6Page() {
 
               {/* Right side grid */}
               <div 
-                className="flex flex-col px-16 pr-2 overflow-hidden" 
+                className="flex flex-col px-4 sm:px-8 md:px-16 pr-2 overflow-hidden" 
                 ref={cardsContainerRef}
                 style={{
-                  height: 'calc(100% - 50px)', /* Reserve space for bottom margin */
-                  paddingTop: '10px',
-                  paddingBottom: '10px',
+                  height: 'calc(100% - 30px)', /* Smaller bottom margin for small screens */
+                  paddingTop: '5px',
+                  paddingBottom: '5px',
                 }}
               >
-                <div className="h-full flex flex-col justify-between space-y-4">
+                <div className="h-full flex flex-col justify-between space-y-2 md:space-y-4">
                   {users.map((user, index) => (
                     <div key={index} className="relative">
                       <UserCard
@@ -162,8 +162,8 @@ export default function Top6Page() {
                         hasData={user.hasData}
                         isSelected={selectedUser === index}
                         onClick={() => handleCardClick(index)}
-                        className={`text-sm flex flex-row items-center ${
-                          selectedUser === index ? "-ml-14 transition-all duration-300" : "transition-all duration-300"
+                        className={`text-xs sm:text-sm flex flex-row items-center ${
+                          selectedUser === index ? "-ml-6 sm:-ml-10 md:-ml-14 transition-all duration-300" : "transition-all duration-300"
                         }`}
                       />
                     </div>
