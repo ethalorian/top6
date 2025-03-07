@@ -6,10 +6,10 @@ import { Input } from "@/components/ui/input"
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
 
 interface SearchPanelProps {
-  onCancel: () => void
+  // Removed the onCancel prop since it's not used
 }
 
-export function SearchPanel({ onCancel }: SearchPanelProps) {
+export function SearchPanel({}: SearchPanelProps) {
   return (
     <div className="bg-white rounded-sm h-full flex flex-col w-full overflow-hidden">
       {/* Logo Section */}
