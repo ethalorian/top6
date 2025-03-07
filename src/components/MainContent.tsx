@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button"
 export function MainContent() {
   return (
     <div className="space-y-[6%] pt-[8%] w-full h-full flex flex-col justify-center">
-      <div className="w-[60%] mb-[5%]">
+      <div className="w-[80%] mb-[5%]">
         <div className="relative w-full aspect-[2/1]">
           <Image 
             src="/top-6-logo.svg" 

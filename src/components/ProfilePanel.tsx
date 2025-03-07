@@ -41,15 +41,15 @@ export function ProfilePanel({ user }: ProfilePanelProps) {
             </span>
           ))}
         </div>
-        {/* Description */}
-        <p className="text-[#94a3b8] text-[clamp(0.8rem,1.5vw,1.1rem)] mb-auto">{user.description}</p>
+        {/* Description - improved text scaling */}
+        <p className="text-[#94a3b8] text-[clamp(0.8rem,1.5vw,1.1rem)] mb-auto leading-[1.5]">{user.description}</p>
         {/* Action Buttons */}
         <div className="flex gap-[3%] mt-[4%]">
           <Button className="bg-[#4a044e] hover:bg-[#3a033e] text-white rounded-xl h-auto py-[3%] px-[5%] flex-1 text-[clamp(0.8rem,1.5vw,1.1rem)]">
             Explore Profile
           </Button>
           <Button className="bg-[#4a044e] hover:bg-[#3a033e] text-white rounded-xl h-auto py-[3%] px-[5%] flex-1 text-[clamp(0.8rem,1.5vw,1.1rem)]">
-            <UserPlus className="mr-[2%] h-[1em] w-[1em]" />
+            <UserPlus className="mr-[2%] h-[2em] w-[2em]" />
             Follow
           </Button>
         </div>

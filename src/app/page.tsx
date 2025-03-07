@@ -119,7 +119,7 @@ export default function Top6Page() {
             className="text-white p-0 flex items-center gap-[2%] text-[clamp(0.7rem,1.5vw,1rem)] font-light"
             onClick={() => setIsConnected(!isConnected)}
           >
-            <ChevronLeft className="w-[clamp(0.75rem,1.5vw,1.5rem)]" />
+            <ChevronLeft className="w-[clamp(1.5rem,3vw,3rem)]" />
             <span>{isConnected ? "Connected" : "Click to Connect"}</span>
           </Button>
         </div>
