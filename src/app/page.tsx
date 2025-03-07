@@ -153,14 +153,14 @@ export default function Top6Page() {
               >
                 <div className="h-full flex flex-col justify-between space-y-4">
                   {users.map((user, index) => (
-                    <div key={index} className="relative text-sm">
+                    <div key={index} className="relative">
                       <UserCard
                         username={user.username}
                         avatar={user.avatar}
                         hasData={user.hasData}
                         isSelected={selectedUser === index}
                         onClick={() => handleCardClick(index)}
-                        className={`text-sm ${
+                        className={`text-sm flex flex-row items-center ${
                           selectedUser === index ? "-ml-14 transition-all duration-300" : "transition-all duration-300"
                         }`}
                       />
