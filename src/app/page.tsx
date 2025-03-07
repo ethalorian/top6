@@ -75,22 +75,8 @@ export default function Top6Page() {
   ]
 
   const handleCardClick = (index: number) => {
-    // Check if clicking on already selected card
-    if (selectedUser === index) {
-      // Deselect the card
-      setSelectedUser(null)
-      setShowSearchPanel(false)
-      return
-    }
-    
-    // Automatically switch between panels based on card data
-    if (users[index].hasData) {
-      setSelectedUser(index)
-      setShowSearchPanel(false)
-    } else {
-      setSelectedUser(null)
-      setShowSearchPanel(true)
-    }
+    setSelectedUser(index);
+    // No conditional logic here - all cards will behave the same
   }
 
   const resetPopovers = () => {
