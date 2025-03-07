@@ -24,7 +24,7 @@ export function UserCard({
 }: UserCardProps) {
   return (
     <Card
-      className={`border-none rounded-tr-2xl rounded-br-2xl pl-[3%] pr-[2%] py-[3.5%] flex items-center justify-between cursor-pointer transition-all duration-300 min-h-[18%] ${
+      className={`w-full border-none rounded-tr-2xl rounded-br-2xl rounded-tl-sm rounded-bl-sm pl-[3%] pr-[2%] py-[3.5%] flex items-center justify-between cursor-pointer transition-all duration-300 min-h-[18%] ${
         isSelected ? "bg-white shadow-md" : "bg-[#94a3b8] hover:bg-[#d9d9d9]"
       } ${className}`}
       onClick={onClick}

@@ -75,6 +75,14 @@ export default function Top6Page() {
   ]
 
   const handleCardClick = (index: number) => {
+    // Check if clicking on already selected card
+    if (selectedUser === index) {
+      // Deselect the card
+      setSelectedUser(null)
+      setShowSearchPanel(false)
+      return
+    }
+    
     // Automatically switch between panels based on card data
     if (users[index].hasData) {
       setSelectedUser(index)
