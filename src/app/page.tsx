@@ -113,20 +113,20 @@ export default function Top6Page() {
   return (
     <div className="h-screen w-screen overflow-hidden bg-[#4a044e] text-white">
       <div className="h-full flex flex-col">
-        <div className="h-[8vh] pl-24 flex items-center">
+        <div className="h-[10%] max-h-[40px] min-h-[25px] pl-[3%] flex items-center">
           <Button
             variant="link"
-            className="text-white p-0 flex items-center gap-3 text-xl font-light"
+            className="text-white p-0 flex items-center gap-[2%] text-[clamp(0.7rem,1.5vw,1rem)] font-light"
             onClick={() => setIsConnected(!isConnected)}
           >
-            <ChevronLeft className="h-6 w-6" />
+            <ChevronLeft className="w-[clamp(0.75rem,1.5vw,1.5rem)]" />
             <span>{isConnected ? "Connected" : "Click to Connect"}</span>
           </Button>
         </div>
-        <div className="flex-1 px-6 overflow-hidden">
+        <div className="flex-1 px-[2%] overflow-hidden">
           <div className="h-full mx-auto">
-            <div className="grid md:grid-cols-2 gap-0 h-full">
-              {/* Left side content */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-0 h-full">
+              {/* Left side content - proportionally scaled */}
               <div className="h-full flex items-center w-full" ref={popoverRef}>
                 {selectedUser !== null ? (
                   <div className="w-full h-full px-0 overflow-hidden">
@@ -137,33 +137,33 @@ export default function Top6Page() {
                     <SearchPanel onCancel={resetPopovers} />
                   </div>
                 ) : (
-                  <div className="flex items-center w-full pl-24 h-full overflow-hidden">
+                  <div className="flex items-center w-full pl-[5%] h-full overflow-hidden">
                     <ContentPanel />
                   </div>
                 )}
               </div>
 
-              {/* Right side grid */}
+              {/* Right side grid - proportionally scaled */}
               <div 
-                className="flex flex-col px-16 pr-2 overflow-hidden" 
+                className="flex flex-col px-[5%] pr-[2%] overflow-hidden" 
                 ref={cardsContainerRef}
                 style={{
-                  height: 'calc(100% - 50px)', /* Reserve space for bottom margin */
-                  paddingTop: '10px',
-                  paddingBottom: '10px',
+                  height: 'calc(100% - 5%)', /* Proportional bottom margin */
+                  paddingTop: 'clamp(2px, 1%, 10px)',
+                  paddingBottom: 'clamp(2px, 1%, 10px)',
                 }}
               >
-                <div className="h-full flex flex-col justify-between space-y-4">
+                <div className="h-full flex flex-col justify-between">
                   {users.map((user, index) => (
-                    <div key={index} className="relative">
+                    <div key={index} className="relative flex-grow py-[clamp(1px,0.5%,5px)]">
                       <UserCard
                         username={user.username}
                         avatar={user.avatar}
                         hasData={user.hasData}
                         isSelected={selectedUser === index}
                         onClick={() => handleCardClick(index)}
-                        className={`text-sm flex flex-row items-center ${
-                          selectedUser === index ? "-ml-14 transition-all duration-300" : "transition-all duration-300"
+                        className={`text-[clamp(0.65rem,1.4vw,0.9rem)] flex flex-row items-center ${
+                          selectedUser === index ? "-ml-[clamp(0.5rem,3vw,3.5rem)] transition-all duration-300" : "transition-all duration-300"
                         }`}
                       />
                     </div>
