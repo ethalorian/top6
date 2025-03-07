@@ -124,10 +124,10 @@ export default function Top6Page() {
           </Button>
         </div>
         <div className="flex-1 px-[2%] overflow-hidden">
-          <div className="h-full mx-auto">
+          <div className="h-full mx-auto max-w-[1400px] aspect-[395.556/290]">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-0 h-full">
-              {/* Left side content - proportionally scaled */}
-              <div className="h-full flex items-center w-full" ref={popoverRef}>
+              {/* Left side content - Content panel area */}
+              <div className="h-full flex items-center w-full relative" ref={popoverRef}>
                 {selectedUser !== null ? (
                   <div className="w-full h-full px-0 overflow-hidden">
                     <ProfilePanel user={users[selectedUser] as UserWithProfile} />
@@ -137,34 +137,33 @@ export default function Top6Page() {
                     <SearchPanel onCancel={resetPopovers} />
                   </div>
                 ) : (
-                  <div className="flex items-center w-full pl-[5%] h-full overflow-hidden">
-                    <ContentPanel />
+                  <div className="flex items-center justify-center w-full h-full overflow-hidden">
+                    <div className="w-[85%] h-[85%]">
+                      <ContentPanel />
+                    </div>
                   </div>
                 )}
               </div>
 
-              {/* Right side grid - proportionally scaled */}
+              {/* Right side grid - Cards container */}
               <div 
-                className="flex flex-col px-[5%] pr-[2%] overflow-hidden" 
+                className="flex flex-col py-[3%] px-[5%] overflow-hidden" 
                 ref={cardsContainerRef}
-                style={{
-                  height: 'calc(100% - 5%)', /* Proportional bottom margin */
-                  paddingTop: 'clamp(2px, 1%, 10px)',
-                  paddingBottom: 'clamp(2px, 1%, 10px)',
-                }}
               >
                 <div className="h-full flex flex-col justify-between">
                   {users.map((user, index) => (
-                    <div key={index} className="relative flex-grow py-[clamp(1px,0.5%,5px)]">
+                    <div key={index} className="relative flex-grow py-[2%]">
                       <UserCard
                         username={user.username}
                         avatar={user.avatar}
                         hasData={user.hasData}
                         isSelected={selectedUser === index}
                         onClick={() => handleCardClick(index)}
-                        className={`text-[clamp(0.65rem,1.4vw,0.9rem)] flex flex-row items-center ${
-                          selectedUser === index ? "-ml-[clamp(0.5rem,3vw,3.5rem)] transition-all duration-300" : "transition-all duration-300"
-                        }`}
+                        className={`text-[clamp(0.65rem,1.4vw,0.9rem)] flex flex-row items-center rounded-full
+                          ${selectedUser === index ? 
+                            "-ml-[clamp(0.5rem,3vw,3.5rem)] transition-all duration-300" : 
+                            "transition-all duration-300"
+                          }`}
                       />
                     </div>
                   ))}
