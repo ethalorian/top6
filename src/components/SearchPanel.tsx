@@ -17,7 +17,7 @@ export function SearchPanel({ onCancel }: SearchPanelProps) {
         <div className="bg-[#4a044e] rounded-sm w-[40%] aspect-square flex items-center justify-center">
           <div className="relative w-[90%] h-[90%]">
             <Image 
-              src="/top-6-logo.svg" 
+              src="/top6-logo.svg" 
               alt="TOP 6" 
               fill
               className="object-contain" 
