@@ -3,27 +3,28 @@ import Image from 'next/image'
 
 export function ContentPanel() {
   return (
-    <div className="space-y-8 w-full">
-      <div className="w-80">
-        <Image 
-          src="/top6-logo.svg" 
-          alt="TOP 6" 
-          width={320}
-          height={120}
-          className="w-full"
-        />
+    <div className="space-y-[5%] w-full h-full flex flex-col justify-center">
+      <div className="w-[60%]">
+        <div className="relative w-full aspect-[8/3]">
+          <Image 
+            src="/top6-logo.svg" 
+            alt="TOP 6" 
+            fill
+            className="object-contain object-left"
+          />
+        </div>
       </div>
 
-      <div className="space-y-4">
-        <h1 className="text-5xl font-bold">TOP 6</h1>
-        <p className="text-3xl font-light">Share. Discover. Follow.</p>
+      <div className="space-y-[3%]">
+        <h1 className="text-[clamp(1.8rem,4vw,3rem)] font-bold">TOP 6</h1>
+        <p className="text-[clamp(1.2rem,2.5vw,2rem)] font-light">Share. Discover. Follow.</p>
 
-        <p className="text-xl font-light max-w-lg leading-relaxed mt-2">
+        <p className="text-[clamp(0.9rem,1.8vw,1.3rem)] font-light max-w-[90%] leading-relaxed mt-[2%]">
           Curate your Top 6 Universal Profiles, all in one grid for your followers to discover and connect with new UPs.
         </p>
 
-        <div className="mt-8">
-          <Button className="bg-[#0f172a] hover:bg-[#1e293b] text-white py-4 px-8 rounded-xl text-xl h-auto w-56">
+        <div className="mt-[5%]">
+          <Button className="bg-[#0f172a] hover:bg-[#1e293b] text-white py-[3%] px-[6%] rounded-xl text-[clamp(0.9rem,1.8vw,1.3rem)] h-auto w-[40%]">
             Follow TOP 6
           </Button>
         </div>

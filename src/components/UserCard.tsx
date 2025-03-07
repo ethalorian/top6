@@ -24,17 +24,19 @@ export function UserCard({
 }: UserCardProps) {
   return (
     <Card
-      className={`border-none rounded-2xl pl-4 pr-2 py-3 flex items-center justify-between cursor-pointer transition-all duration-300 min-h-[5.5rem] ${
+      className={`border-none rounded-2xl pl-[3%] pr-[2%] py-[2%] flex items-center justify-between cursor-pointer transition-all duration-300 min-h-[13%] ${
         isSelected ? "bg-white shadow-md" : "bg-[#94a3b8] hover:bg-[#d9d9d9]"
       } ${className}`}
       onClick={onClick}
     >
-      <div className="flex items-center gap-4">
-        <Avatar className="h-16 w-16 rounded-full">
-          <AvatarImage src={avatar} alt="User avatar" />
-          <AvatarFallback>UP</AvatarFallback>
-        </Avatar>
-        <span className={`text-xl font-medium ${isSelected ? "text-[#0f172a]" : "text-white"}`}>{username}</span>
+      <div className="flex items-center gap-[4%]">
+        <div className="relative w-[clamp(2rem,5vw,3.5rem)] aspect-square">
+          <Avatar className="h-full w-full rounded-full">
+            <AvatarImage src={avatar} alt="User avatar" />
+            <AvatarFallback>UP</AvatarFallback>
+          </Avatar>
+        </div>
+        <span className={`text-[clamp(0.8rem,1.5vw,1.1rem)] font-medium ${isSelected ? "text-[#0f172a]" : "text-white"}`}>{username}</span>
       </div>
       <Button
         variant="ghost"
@@ -46,9 +48,9 @@ export function UserCard({
         }}
       >
         <div
-          className={`flex items-center justify-center h-8 w-8 rounded-full border ${isSelected ? "border-[#0f172a]" : "border-white"}`}
+          className={`flex items-center justify-center h-[clamp(1.5rem,2.5vw,2rem)] w-[clamp(1.5rem,2.5vw,2rem)] rounded-full border ${isSelected ? "border-[#0f172a]" : "border-white"}`}
         >
-          <UserPlus className="h-4 w-4" />
+          <UserPlus className="h-[50%] w-[50%]" />
         </div>
         <span className="sr-only">{hasData ? "View profile" : "Add user"}</span>
       </Button>
