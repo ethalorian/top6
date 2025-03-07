@@ -134,9 +134,9 @@ export default function Top6Page() {
         <div className="flex-1 px-[2%] overflow-hidden">
           <div className="h-full mx-auto max-w-[1400px] aspect-[395.556/290]">
             <div className="flex h-full">
-              <div className="h-full w-1/2 flex items-center relative" ref={popoverRef}>
-                {selectedUser !== null ? (
-                  <div className="w-full h-full px-0 overflow-hidden">
+              <div className="h-full w-1/2 flex py-[3%] px-[5%] relative" ref={popoverRef}>
+                <div className="h-full flex flex-col justify-between w-full">
+                  {selectedUser !== null ? (
                     <ProfilePanel user={users[selectedUser] as UserWithProfile} />
                   ) : showSearchPanel ? (
                     <SearchPanel onCancel={resetPopovers} />
