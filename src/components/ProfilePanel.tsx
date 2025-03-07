@@ -49,7 +49,7 @@ export function ProfilePanel({ user }: ProfilePanelProps) {
             Explore Profile
           </Button>
           <Button className="bg-[#4a044e] hover:bg-[#3a033e] text-white rounded-xl h-auto py-[3%] px-[5%] flex-1 text-[clamp(0.8rem,1.5vw,1.1rem)]">
-            <UserPlus className="mr-[2%] h-[2em] w-[2em]" />
+            <UserPlus className="mr-[2%] h-[clamp(1.6rem,3vw,2.2rem)] w-[clamp(1.6rem,3vw,2.2rem)]" />
             Follow
           </Button>
         </div>

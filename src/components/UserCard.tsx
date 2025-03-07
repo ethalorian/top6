@@ -50,7 +50,7 @@ export function UserCard({
         <div
           className={`flex items-center justify-center h-[clamp(3rem,5vw,4rem)] w-[clamp(3rem,5vw,4rem)] rounded-full border ${isSelected ? "border-[#0f172a]" : "border-white"}`}
         >
-          <UserPlus className="h-[100%] w-[100%]" />
+          <UserPlus className="h-[50%] w-[50%]" />
         </div>
         <span className="sr-only">{hasData ? "View profile" : "Add user"}</span>
       </Button>

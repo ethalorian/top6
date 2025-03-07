@@ -5,7 +5,7 @@ export function MainContent() {
   return (
     <div className="space-y-[6%] pt-[8%] w-full h-full flex flex-col justify-center">
       <div className="w-[80%] mb-[5%]">
-        <div className="relative w-full aspect-[2/1]">
+        <div className="relative w-full aspect-[4/2]">
           <Image 
             src="/top-6-logo.svg" 
             alt="TOP 6" 

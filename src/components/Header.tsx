@@ -11,7 +11,7 @@ export function Header() {
         asChild
       >
         <Link href="#">
-          <ChevronLeft className="w-[clamp(2.4rem,4.4vw,3.6rem)] h-[clamp(2.4rem,4.4vw,3.6rem)]" />
+          <ChevronLeft className="w-[clamp(1.5rem,3vw,3rem)] h-[clamp(1.5rem,3vw,3rem)]" />
           <span>Click to Connect</span>
         </Link>
       </Button>
