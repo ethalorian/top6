@@ -41,14 +41,15 @@ export function UserCard({
       <Button
         variant="ghost"
         size="icon"
-        className={`${isSelected ? "text-[#0f172a]" : "text-white"} hover:text-[#4a044e] hover:bg-transparent`}
+        className={`flex items-center justify-center h-[clamp(3rem,5vw,4rem)] w-[clamp(3rem,5vw,4rem)] p-0 
+        ${isSelected ? "text-[#0f172a]" : "text-white"} hover:text-[#4a044e] hover:bg-transparent`}
         onClick={(e) => {
           e.stopPropagation()
           onClick()
         }}
       >
         <div
-          className={`flex items-center justify-center h-[clamp(3rem,5vw,4rem)] w-[clamp(3rem,5vw,4rem)] rounded-full border ${isSelected ? "border-[#0f172a]" : "border-white"}`}
+          className={`flex items-center justify-center h-full w-full rounded-full border ${isSelected ? "border-[#0f172a]" : "border-white"}`}
         >
           <UserPlus className="h-[50%] w-[50%]" />
         </div>
