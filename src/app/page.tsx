@@ -131,10 +131,10 @@ export default function Top6Page() {
             <span>{isConnected ? "Connected" : "Click to Connect"}</span>
           </Button>
         </div>
-        <div className="flex-1 px-[2%] overflow-hidden">
+        <div className="flex-1 px-[0.67%] overflow-hidden">
           <div className="h-full mx-auto max-w-[1400px] aspect-[395.556/290]">
             <div className="flex h-full">
-              <div className="h-full w-1/2 flex py-[3%] px-[5%] relative" ref={popoverRef}>
+              <div className="h-full w-1/2 flex py-[3%] px-[1.5%] relative" ref={popoverRef}>
                 <div className="h-full flex flex-col justify-between w-full">
                   {selectedUser !== null ? (
                     <ProfilePanel user={users[selectedUser] as UserWithProfile} />
@@ -147,7 +147,7 @@ export default function Top6Page() {
               </div>
 
               <div 
-                className="w-1/2 flex flex-col py-[3%] px-[5%] overflow-hidden" 
+                className="w-1/2 flex flex-col py-[3%] px-[1.5%] overflow-hidden" 
                 ref={cardsContainerRef}
               >
                 <div className="h-full flex flex-col justify-between gap-[2%]">
