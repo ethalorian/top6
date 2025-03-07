@@ -134,8 +134,8 @@ export default function Top6Page() {
         <div className="flex-1 px-[0.67%] overflow-hidden">
           <div className="h-full mx-auto max-w-[1400px] aspect-[395.556/290]">
             <div className="h-full flex">
-              <div className="h-full w-1/2 flex py-[3%] px-[1.5%] relative" ref={popoverRef}>
-                <div className="h-full flex flex-col w-full">
+              <div className="h-full w-1/2 flex py-[3%] px-[1.5%] relative flex-col" ref={popoverRef}>
+                <div className="flex-1 flex flex-col justify-end">
                   {selectedUser !== null ? (
                     <ProfilePanel user={users[selectedUser] as UserWithProfile} />
                   ) : showSearchPanel ? (
@@ -150,7 +150,7 @@ export default function Top6Page() {
                 className="w-1/2 h-full flex flex-col py-[3%] px-[1.5%] overflow-hidden" 
                 ref={cardsContainerRef}
               >
-                <div className="h-full flex flex-col justify-between gap-[2%]">
+                <div className="flex-1 flex flex-col justify-between gap-[2%]">
                   {users.map((user, index) => (
                     <div key={index} className="relative flex-grow py-0">
                       <UserCard
