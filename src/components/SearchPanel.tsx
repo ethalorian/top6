@@ -5,7 +5,12 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
 
-export function SearchPanel() {
+// Add props interface with onCancel function
+interface SearchPanelProps {
+  onCancel?: () => void;
+}
+
+export function SearchPanel({ onCancel }: SearchPanelProps) {
   return (
     <div className="bg-white rounded-sm h-full flex flex-col w-full overflow-hidden">
       {/* Logo Section */}
@@ -54,7 +59,14 @@ export function SearchPanel() {
         </div>
         
         {/* Add Button */}
-        <div className="mt-auto">
+        <div className="mt-auto flex justify-between">
+          <Button 
+            variant="outline" 
+            onClick={onCancel}
+            className="rounded-lg h-12 px-6 text-lg"
+          >
+            Cancel
+          </Button>
           <Button className="bg-[#4a044e] hover:bg-[#3a033e] text-white rounded-lg h-12 px-8 text-lg w-[120px]">
             Add
           </Button>
