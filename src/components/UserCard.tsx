@@ -24,14 +24,14 @@ export function UserCard({
 }: UserCardProps) {
   return (
     <Card
-      className={`w-full border-none rounded-tr-2xl rounded-br-2xl  pl-[3%] pr-[2%] py-[3.5%] flex items-center justify-between cursor-pointer transition-all duration-300 min-h-[18%] ${
+      className={`w-full border-none rounded-none pl-[3%] pr-[2%] py-[3.5%] flex items-center justify-between cursor-pointer transition-all duration-300 min-h-[18%] ${
         isSelected ? "bg-white shadow-md" : "bg-[#94a3b8] hover:bg-[#d9d9d9]"
       } ${className}`}
       onClick={onClick}
     >
       <div className="flex items-center gap-[4%]">
         <div className="relative w-[clamp(2rem,5vw,3.5rem)] aspect-square mr-[3%]">
-          <Avatar className="h-full w-full rounded-full">
+          <Avatar className="h-full w-full rounded-md">
             <AvatarImage src={avatar} alt="User avatar" />
             <AvatarFallback>UP</AvatarFallback>
           </Avatar>
@@ -49,7 +49,7 @@ export function UserCard({
         }}
       >
         <div
-          className={`flex items-center justify-center h-full w-full rounded-full border ${isSelected ? "border-[#0f172a]" : "border-white"}`}
+          className={`flex items-center justify-center h-full w-full rounded-none border ${isSelected ? "border-[#0f172a]" : "border-white"}`}
         >
           <UserPlus className="h-[50%] w-[50%]" />
         </div>

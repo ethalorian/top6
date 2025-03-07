@@ -159,7 +159,7 @@ export default function Top6Page() {
                         hasData={user.hasData}
                         isSelected={selectedUser === index}
                         onClick={() => handleCardClick(index)}
-                        className={`text-[clamp(0.65rem,1.4vw,0.9rem)] flex flex-row items-center rounded-full
+                        className={`text-[clamp(0.65rem,1.4vw,0.9rem)] flex flex-row items-center
                           ${selectedUser === index ? 
                             "-ml-[clamp(0.5rem,3vw,3.5rem)] transition-all duration-300" : 
                             "transition-all duration-300"
