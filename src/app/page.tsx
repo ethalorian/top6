@@ -138,18 +138,12 @@ export default function Top6Page() {
                 {selectedUser !== null ? (
                   <div className="w-full h-full px-0 overflow-hidden">
                     <ProfilePanel user={users[selectedUser] as UserWithProfile} />
-                  </div>
-                ) : showSearchPanel ? (
-                  <div className="w-full h-full px-0 overflow-hidden">
+                  ) : showSearchPanel ? (
                     <SearchPanel onCancel={resetPopovers} />
-                  </div>
-                ) : (
-                  <div className="flex items-center justify-center w-full h-full overflow-hidden">
-                    <div className="w-[85%] h-[85%]">
-                      <ContentPanel />
-                    </div>
-                  </div>
-                )}
+                  ) : (
+                    <ContentPanel />
+                  )}
+                </div>
               </div>
 
               <div 
