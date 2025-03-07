@@ -111,40 +111,40 @@ export default function Top6Page() {
   }, [])
 
   return (
-    <div className="min-h-screen bg-[#4a044e] text-white">
-      <div className="h-screen flex flex-col">
-        <div className="h-[10vh] pl-24 flex items-center">
+    <div className="h-screen w-screen overflow-hidden bg-[#4a044e] text-white">
+      <div className="h-full flex flex-col">
+        <div className="h-[8vh] pl-24 flex items-center">
           <Button
             variant="link"
-            className="text-white p-0 flex items-center gap-3 text-2xl font-light"
+            className="text-white p-0 flex items-center gap-3 text-xl font-light"
             onClick={() => setIsConnected(!isConnected)}
           >
-            <ChevronLeft className="h-7 w-7" />
+            <ChevronLeft className="h-6 w-6" />
             <span>{isConnected ? "Connected" : "Click to Connect"}</span>
           </Button>
         </div>
-        <div className="flex-1 px-6 pb-8">
-          <div className="max-w-7xl mx-auto h-full">
+        <div className="flex-1 px-6 overflow-hidden">
+          <div className="h-full mx-auto">
             <div className="grid md:grid-cols-2 gap-0 h-full">
               {/* Left side content */}
               <div className="h-full flex items-center w-full" ref={popoverRef}>
                 {selectedUser !== null ? (
-                  <div className="w-full h-full px-0">
+                  <div className="w-full h-full px-0 overflow-hidden">
                     <ProfilePanel user={users[selectedUser] as UserWithProfile} />
                   </div>
                 ) : showSearchPanel ? (
-                  <div className="w-full h-full px-0">
+                  <div className="w-full h-full px-0 overflow-hidden">
                     <SearchPanel onCancel={resetPopovers} />
                   </div>
                 ) : (
-                  <div className="flex items-center w-full pl-24 h-full">
+                  <div className="flex items-center w-full pl-24 h-full overflow-hidden">
                     <ContentPanel />
                   </div>
                 )}
               </div>
 
               {/* Right side grid */}
-              <div className="grid grid-cols-1 h-full gap-1 pl-16 pr-2" ref={cardsContainerRef}>
+              <div className="flex flex-col justify-between h-[92vh] py-4 pl-16 pr-2 overflow-hidden" ref={cardsContainerRef}>
                 {users.map((user, index) => (
                   <div key={index} className="relative">
                     <UserCard
