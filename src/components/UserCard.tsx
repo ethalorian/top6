@@ -30,7 +30,7 @@ export function UserCard({
       onClick={onClick}
     >
       <div className="flex items-center gap-[4%]">
-        <div className="relative w-[clamp(2rem,5vw,3.5rem)] aspect-square">
+        <div className="relative w-[clamp(2rem,5vw,3.5rem)] aspect-square mr-[3%]">
           <Avatar className="h-full w-full rounded-full">
             <AvatarImage src={avatar} alt="User avatar" />
             <AvatarFallback>UP</AvatarFallback>

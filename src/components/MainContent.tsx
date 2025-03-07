@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button"
 export function MainContent() {
   return (
     <div className="space-y-[6%] pt-[8%] w-full h-full flex flex-col justify-center">
-      <div className="w-[60%]">
+      <div className="w-[60%] mb-[5%]">
         <div className="relative w-full aspect-[2/1]">
           <Image 
             src="/top-6-logo.svg" 
@@ -17,10 +17,10 @@ export function MainContent() {
       </div>
 
       <div className="space-y-[4%]">
-        <h1 className="text-[clamp(1.5rem,3.5vw,2.5rem)] font-bold">TOP 6</h1>
-        <p className="text-[clamp(1rem,2vw,1.5rem)]">Share. Discover. Follow.</p>
+        <h1 className="text-[clamp(1.5rem,3.5vw,2.5rem)] font-bold mb-[2%]">TOP 6</h1>
+        <p className="text-[clamp(1rem,2vw,1.5rem)] mb-[3%]">Share. Discover. Follow.</p>
 
-        <p className="text-[clamp(0.9rem,1.8vw,1.2rem)] max-w-[90%] leading-relaxed">
+        <p className="text-[clamp(0.9rem,1.8vw,1.2rem)] max-w-[90%] leading-relaxed mb-[4%]">
           Curate your Top 6 Universal Profiles, all in one grid for your followers to discover and connect with new UPs.
         </p>
 

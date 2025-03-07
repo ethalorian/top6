@@ -148,7 +148,7 @@ export default function Top6Page() {
                 className="w-1/2 flex flex-col py-[3%] px-[5%] overflow-hidden" 
                 ref={cardsContainerRef}
               >
-                <div className="h-full flex flex-col justify-between">
+                <div className="h-full flex flex-col justify-between gap-[2%]">
                   {users.map((user, index) => (
                     <div key={index} className="relative flex-grow py-[2%]">
                       <UserCard

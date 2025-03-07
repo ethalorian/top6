@@ -50,11 +50,11 @@ export function SearchPanel({ onCancel }: SearchPanelProps) {
       {/* Content */}
       <div className="p-[3%] flex-1">
         <div className="space-y-[5%]">
-          <p className="text-[#64748b] text-[clamp(0.8rem,1.5vw,1.1rem)]">
+          <p className="text-[#64748b] text-[clamp(0.8rem,1.5vw,1.1rem)] mb-[4%]">
             Select up to six profiles to add and display on your Top 6.
           </p>
 
-          <div className="space-y-[2%]">
+          <div className="space-y-[2%] mb-[4%]">
             <label htmlFor="search" className="text-[#0f172a] font-medium text-[clamp(0.8rem,1.5vw,1.1rem)]">
               Search by Address or Username
             </label>
