@@ -148,7 +148,7 @@ export default function Top6Page() {
                 className="flex flex-col h-full px-16 pr-2 py-2 overflow-hidden" 
                 ref={cardsContainerRef}
                 style={{
-                  marginBottom: '20px', /* Clear margin at the bottom of the window */
+                  marginBottom: '40px', /* Increased margin at the bottom of the window */
                 }}
               >
                 <div className="h-full flex flex-col justify-between space-y-4">
