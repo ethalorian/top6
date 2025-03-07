@@ -125,9 +125,8 @@ export default function Top6Page() {
         </div>
         <div className="flex-1 px-[2%] overflow-hidden">
           <div className="h-full mx-auto max-w-[1400px] aspect-[395.556/290]">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-0 h-full">
-              {/* Left side content - Content panel area */}
-              <div className="h-full flex items-center w-full relative" ref={popoverRef}>
+            <div className="flex h-full">
+              <div className="h-full w-1/2 flex items-center relative" ref={popoverRef}>
                 {selectedUser !== null ? (
                   <div className="w-full h-full px-0 overflow-hidden">
                     <ProfilePanel user={users[selectedUser] as UserWithProfile} />
@@ -145,9 +144,8 @@ export default function Top6Page() {
                 )}
               </div>
 
-              {/* Right side grid - Cards container */}
               <div 
-                className="flex flex-col py-[3%] px-[5%] overflow-hidden" 
+                className="w-1/2 flex flex-col py-[3%] px-[5%] overflow-hidden" 
                 ref={cardsContainerRef}
               >
                 <div className="h-full flex flex-col justify-between">
