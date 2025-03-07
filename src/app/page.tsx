@@ -148,8 +148,8 @@ export default function Top6Page() {
                 className="flex flex-col justify-between h-full px-16 pr-2 py-2 overflow-hidden" 
                 ref={cardsContainerRef}
                 style={{
-                  gap: '12px', /* Even spacing between cards */
-                  paddingBottom: '10px' /* Slight margin at the bottom */
+                  gap: '16px', /* Increased padding between cards */
+                  marginBottom: '20px' /* Clear margin at the bottom of the window */
                 }}
               >
                 {users.map((user, index) => (
