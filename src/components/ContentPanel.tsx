@@ -4,8 +4,8 @@ import Image from 'next/image'
 export function ContentPanel() {
   return (
     <div className="space-y-[5%] w-full h-full flex flex-col justify-center">
-      <div className="w-[80%] mb-[4%]">
-        <div className="relative w-full aspect-[8/3]">
+      <div className="w-[90%] mb-[4%]">
+        <div className="relative w-full aspect-[8/3] transform scale-[2.5]">
           <Image 
             src="/top6-logo.svg" 
             alt="TOP 6" 
@@ -24,7 +24,7 @@ export function ContentPanel() {
         </p>
 
         <div className="mt-[5%]">
-          <Button className="bg-[#0f172a] hover:bg-[#1e293b] text-white py-[3%] px-[6%] rounded-xl text-[clamp(0.9rem,1.8vw,1.3rem)] h-auto w-[40%]">
+          <Button className="bg-[#0f172a] hover:bg-[#1e293b] text-white py-[3%] px-[6%] rounded-sm text-[clamp(0.9rem,1.8vw,1.3rem)] h-auto w-[40%]">
             Follow TOP 6
           </Button>
         </div>

@@ -11,10 +11,10 @@ interface SearchPanelProps {
 
 export function SearchPanel({ onCancel }: SearchPanelProps) {
   return (
-    <div className="bg-white rounded-2xl h-full flex flex-col w-full overflow-hidden">
+    <div className="bg-white rounded-sm h-full flex flex-col w-full overflow-hidden">
       {/* Logo Section */}
-      <div className="bg-[#f8fafc] rounded-t-2xl p-[3%] flex items-center justify-center h-[25%]">
-        <div className="bg-[#4a044e] rounded-xl w-[40%] aspect-square flex items-center justify-center">
+      <div className="bg-[#f8fafc] rounded-t-sm p-[3%] flex items-center justify-center h-[25%]">
+        <div className="bg-[#4a044e] rounded-sm w-[40%] aspect-square flex items-center justify-center">
           <div className="relative w-[90%] h-[90%]">
             <Image 
               src="/top-6-logo.svg" 
@@ -65,7 +65,7 @@ export function SearchPanel({ onCancel }: SearchPanelProps) {
             />
           </div>
 
-          <Button className="bg-[#4a044e] hover:bg-[#3a033e] text-white rounded-xl h-[clamp(2.5rem,4vw,3rem)] px-[6%] text-[clamp(0.8rem,1.5vw,1.1rem)]">
+          <Button className="bg-[#4a044e] hover:bg-[#3a033e] text-white rounded-sm h-[clamp(2.5rem,4vw,3rem)] px-[6%] text-[clamp(0.8rem,1.5vw,1.1rem)]">
             Add
           </Button>
         </div>

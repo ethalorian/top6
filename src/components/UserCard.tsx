@@ -24,7 +24,7 @@ export function UserCard({
 }: UserCardProps) {
   return (
     <Card
-      className={`border-none rounded-2xl pl-[3%] pr-[2%] py-[2%] flex items-center justify-between cursor-pointer transition-all duration-300 min-h-[13%] ${
+      className={`border-none rounded-tr-2xl rounded-br-2xl pl-[3%] pr-[2%] py-[3.5%] flex items-center justify-between cursor-pointer transition-all duration-300 min-h-[18%] ${
         isSelected ? "bg-white shadow-md" : "bg-[#94a3b8] hover:bg-[#d9d9d9]"
       } ${className}`}
       onClick={onClick}
@@ -41,7 +41,7 @@ export function UserCard({
       <Button
         variant="ghost"
         size="icon"
-        className={`flex items-center justify-center h-[clamp(3rem,5vw,4rem)] w-[clamp(3rem,5vw,4rem)] p-0 
+        className={`flex items-center justify-center h-[clamp(2rem,4vw,3.5rem)] w-[clamp(2rem,4vw,3.5rem)] p-0 
         ${isSelected ? "text-[#0f172a]" : "text-white"} hover:text-[#4a044e] hover:bg-transparent`}
         onClick={(e) => {
           e.stopPropagation()
