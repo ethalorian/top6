@@ -41,7 +41,7 @@ export function UserCard({
       <Button
         variant="ghost"
         size="icon"
-        className={`flex items-center justify-center h-[clamp(2rem,4vw,3.5rem)] w-[clamp(2rem,4vw,3.5rem)] p-0 
+        className={`flex items-center justify-center h-[clamp(2rem,4vw,3.5rem)] w-[clamp(2rem,4vw,3.5rem)] p-5 
         ${isSelected ? "text-[#0f172a]" : "text-white"} hover:text-[#4a044e] hover:bg-transparent`}
         onClick={(e) => {
           e.stopPropagation()
