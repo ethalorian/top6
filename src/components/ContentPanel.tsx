@@ -5,7 +5,7 @@ export function ContentPanel() {
   return (
     <div className="space-y-[5%] w-full h-full flex flex-col justify-center">
       <div className="w-[80%] mb-[4%]">
-        <div className="relative w-full aspect-[21/3]">
+        <div className="relative w-full aspect-[1/1]">
           <Image 
             src="/top6-logo.svg" 
             alt="TOP 6" 
