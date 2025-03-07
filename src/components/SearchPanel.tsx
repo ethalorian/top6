@@ -3,7 +3,7 @@
 import Image from "next/image"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 
 interface SearchPanelProps {
   onCancel: () => void
@@ -11,71 +11,60 @@ interface SearchPanelProps {
 
 export function SearchPanel({ onCancel }: SearchPanelProps) {
   return (
-    <div className="bg-white rounded-sm h-full flex flex-col w-full overflow-hidden">
-      {/* Logo Section */}
-      <div className="bg-[#f8fafc] rounded-t-sm p-[3%] flex items-center justify-center h-[25%]">
-        <div className="bg-[#4a044e] rounded-sm w-[40%] aspect-square flex items-center justify-center">
-          <div className="relative w-[90%] h-[90%]">
+    <div className="w-full h-full flex flex-col justify-between">
+      <div className="space-y-6">
+        {/* Logo */}
+        <div className="w-[30%] mx-auto bg-[#4a044e] rounded-lg p-4">
+          <div className="relative w-full aspect-square">
             <Image 
               src="/top6-logo.svg" 
               alt="TOP 6" 
               fill
-              className="object-contain" 
-              priority 
+              className="object-contain object-center"
             />
           </div>
         </div>
-      </div>
 
-      {/* Tabs */}
-      <div className="px-[3%]">
+        {/* Tabs */}
         <Tabs defaultValue="search" className="w-full">
-          <TabsList className="w-full bg-white h-[8%] min-h-[2.5rem] p-[1%] border-b">
-            <TabsTrigger
-              value="search"
-              className="flex-1 data-[state=active]:bg-transparent data-[state=active]:shadow-none rounded-none text-[clamp(0.9rem,1.8vw,1.2rem)] font-medium"
-            >
-              Search
-            </TabsTrigger>
-            <TabsTrigger
-              value="following"
-              className="flex-1 data-[state=active]:bg-transparent data-[state=active]:shadow-none rounded-none text-[clamp(0.9rem,1.8vw,1.2rem)] font-medium text-[#94a3b8]"
-            >
-              Following
-            </TabsTrigger>
+          <TabsList className="grid w-full grid-cols-2 rounded-lg">
+            <TabsTrigger value="search">Search</TabsTrigger>
+            <TabsTrigger value="following">Following</TabsTrigger>
           </TabsList>
+          <TabsContent value="search" className="space-y-4 mt-6">
+            <p className="text-[#64748b] text-[clamp(0.9rem,1.8vw,1.3rem)]">
+              Select up to six profiles to add and display on your Top 6.
+            </p>
+            
+            <h3 className="font-medium text-[clamp(1rem,2vw,1.5rem)] mt-8 mb-2">
+              Search by Address or Username
+            </h3>
+            
+            <Input 
+              placeholder="0×01234..." 
+              className="rounded-lg border-gray-300 text-[clamp(0.9rem,1.8vw,1.2rem)] p-4"
+            />
+          </TabsContent>
+          <TabsContent value="following">
+            <p className="text-[#64748b] text-[clamp(0.9rem,1.8vw,1.3rem)]">
+              Your followed profiles will appear here.
+            </p>
+          </TabsContent>
         </Tabs>
       </div>
 
-      {/* Content */}
-      <div className="p-[3%] flex-1">
-        <div className="space-y-[5%]">
-          <p className="text-[#64748b] text-[clamp(0.8rem,1.5vw,1.1rem)] mb-[4%]">
-            Select up to six profiles to add and display on your Top 6.
-          </p>
-
-          <div className="space-y-[2%] mb-[4%]">
-            <label htmlFor="search" className="text-[#0f172a] font-medium text-[clamp(0.8rem,1.5vw,1.1rem)]">
-              Search by Address or Username
-            </label>
-            <Input 
-              id="search" 
-              placeholder="0×01234..." 
-              className="bg-white border-[#e2e8f0] h-[clamp(2.5rem,4vw,3rem)] text-[clamp(0.8rem,1.5vw,1.1rem)]" 
-            />
-          </div>
-
-          <Button className="bg-[#4a044e] hover:bg-[#3a033e] text-white rounded-sm h-[clamp(2.5rem,4vw,3rem)] px-[6%] text-[clamp(0.8rem,1.5vw,1.1rem)]">
-            Add
-          </Button>
-        </div>
-      </div>
-
-      {/* Cancel Button */}
-      <div className="p-[3%] pt-0">
-        <Button
-          variant="ghost"
-          className="w-full text-[#64748b] hover:text-[#4a044e] hover:bg-transparent text-[clamp(0.8rem,1.5vw,1.1rem)]"
+      {/* Bottom buttons */}
+      <div className="mt-auto flex gap-4">
+        <Button 
+          className="bg-[#4a044e] hover:bg-[#3b0040] text-white py-[3%] px-[6%] rounded-lg text-[clamp(0.9rem,1.8vw,1.3rem)] h-auto"
+          onClick={() => {}}
+        >
+          Add
+        </Button>
+        
+        <Button 
+          variant="outline"
+          className="text-[#4a044e] hover:bg-[#f8f9fa] py-[3%] px-[6%] rounded-lg text-[clamp(0.9rem,1.8vw,1.3rem)] h-auto"
           onClick={onCancel}
         >
           Cancel
