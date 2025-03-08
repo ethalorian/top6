@@ -5,13 +5,13 @@ export function ContentPanel() {
   return (
     <div className="w-full h-full flex flex-col justify-between">
       <div className="space-y-[5%]">
-        <div className="w-[80%] mb-[2%] mx-auto">
+        <div className="w-[80%] mb-[2%]">
           <div className="relative w-full aspect-[1/1]">
             <Image 
               src="/top6-logo.svg" 
               alt="TOP 6" 
               fill
-              className="object-contain object-center"
+              className="object-contain object-left"
             />
           </div>
         </div>
