@@ -21,6 +21,7 @@ export default function Top6Page() {
   const [showSearchPanel, setShowSearchPanel] = useState(false)
   const [selectedUser, setSelectedUser] = useState<number | null>(null)
   const [isConnected, setIsConnected] = useState(false)
+  const [selectedCardId, setSelectedCardId] = useState<string | null>(null)
 
   const popoverRef = useRef<HTMLDivElement>(null)
   const cardsContainerRef = useRef<HTMLDivElement>(null)
@@ -74,13 +75,25 @@ export default function Top6Page() {
     },
   ]
 
-  const handleCardClick = (index: number) => {
-    setSelectedUser(index);
-    // No conditional logic here - all cards will behave the same
+  const handleCardClick = (cardId: string) => {
+    // Find the user index that matches the clicked card
+    const userIndex = users.findIndex(user => user.username === cardId);
+    
+    if (selectedCardId === cardId) {
+      // Clicking the same card again - close everything
+      setSelectedCardId(null);
+      setSelectedUser(null);
+      setShowSearchPanel(false);
+    } else {
+      // Clicking a different card
+      setSelectedCardId(cardId);
+      setSelectedUser(userIndex >= 0 ? userIndex : null);
+      setShowSearchPanel(false); // Don't show search panel, show profile instead
+    }
   }
 
   const resetPopovers = () => {
-    setSelectedUser(null)
+    setSelectedCardId(null)
     setShowSearchPanel(false)
   }
 
@@ -153,10 +166,10 @@ export default function Top6Page() {
                         username={user.username}
                         avatar={user.avatar}
                         hasData={user.hasData}
-                        isSelected={selectedUser === index}
-                        onClick={() => handleCardClick(index)}
+                        isSelected={selectedCardId === user.username}
+                        onClick={() => handleCardClick(user.username)}
                         className={`text-[clamp(0.65rem,1.4vw,0.9rem)] flex flex-row items-center
-                          ${selectedUser === index ? 
+                          ${selectedCardId === user.username ? 
                             "-ml-[clamp(0.5rem,3vw,3.5rem)] transition-all duration-300" : 
                             "transition-all duration-300"
                           }`}
