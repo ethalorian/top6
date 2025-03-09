@@ -39,7 +39,9 @@ export default function Top6Page() {
     console.log('Manually refreshing data...');
     fetchedRef.current = false; // Reset the fetchedRef to allow a new fetch
     setIsLoading(true);
-    fetchProfilesRef.current && fetchProfilesRef.current();
+    if (fetchProfilesRef.current) {
+      fetchProfilesRef.current();
+    }
   }, []);
   
   // Use the UPMetadata hook
@@ -51,6 +53,7 @@ export default function Top6Page() {
   } = useUPMetadata()
 
   // Fetch user profiles when connected
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => {
     // Move fetchProfilesWithRateLimiting inside useEffect to avoid dependency issues
     const fetchProfilesWithRateLimiting = async (addresses: string[]): Promise<UserWithProfile[]> => {
