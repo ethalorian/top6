@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect, useRef } from "react"
+import { useState, useEffect, useRef, useCallback } from "react"
 import { UserCard } from "@/components/UserCard"
 import { SearchPanel } from "@/components/SearchPanel"
 import { ContentPanel } from "@/components/ContentPanel"
@@ -40,8 +40,14 @@ export default function Top6Page() {
     retrieveLSP3ProfileData
   } = useUPMetadata()
 
+  // Add a ref to track if we've already attempted to fetch
+  const hasFetchedRef = useRef(false);
+  
   // Fetch user profiles when connected
   useEffect(() => {
+    // Skip if we've already fetched once
+    if (hasFetchedRef.current) return;
+    
     // Move fetchProfilesWithRateLimiting inside useEffect to avoid dependency issues
     const fetchProfilesWithRateLimiting = async (addresses: string[]): Promise<UserWithProfile[]> => {
       const profiles: UserWithProfile[] = [];
@@ -110,128 +116,162 @@ export default function Top6Page() {
       // Always start with loading state
       setIsLoading(true);
       
-      if (profileConnected) {
-        setIsConnected(true);
-        
-        try {
-          // Get the user's top accounts using the schema name from your utils file
-          const topAccountsData = await retrieveMetadataFromProfile(
-            profileAddress,
-            'MyTopAccounts'
-          )
+      try {
+        if (profileConnected) {
+          setIsConnected(true);
           
-          // If we have connections, fetch their profile data
-          if (topAccountsData && Array.isArray(topAccountsData.value)) {
-            const addresses = topAccountsData.value as string[]
-            console.log('Found top accounts:', addresses)
+          try {
+            // Get the user's top accounts using the schema name from your utils file
+            const topAccountsData = await retrieveMetadataFromProfile(
+              profileAddress,
+              'MyTopAccounts'
+            );
             
-            // Batch process profiles with rate limiting protection
-            const profilesData = await fetchProfilesWithRateLimiting(addresses.slice(0, 6))
-            setUsers(profilesData)
-          } else {
-            console.log('No top accounts found or invalid data:', topAccountsData)
-            // If no connections found, use placeholder data
+            // If we have connections, fetch their profile data
+            if (topAccountsData && Array.isArray(topAccountsData.value)) {
+              const addresses = topAccountsData.value as string[];
+              console.log('Found top accounts:', addresses);
+              
+              if (addresses.length > 0) {
+                // Batch process profiles with rate limiting protection
+                const profilesData = await fetchProfilesWithRateLimiting(addresses.slice(0, 6));
+                setUsers(profilesData);
+              } else {
+                // No addresses found
+                setUsers([
+                  {
+                    username: "No connections found",
+                    avatar: "/placeholder.svg?height=48&width=48",
+                    hasData: false,
+                    headerImage: "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/TOP_6___Grid_v1-vUeZjoixx1qfYf2Mba1yccHhfcAZWP.png",
+                    badges: ["badge"],
+                    description: "Add your top accounts to see them here.",
+                    address: ""
+                  }
+                ]);
+              }
+            } else {
+              console.log('No top accounts found or invalid data:', topAccountsData);
+              // If no connections found, use placeholder data
+              setUsers([
+                {
+                  username: "No connections found",
+                  avatar: "/placeholder.svg?height=48&width=48",
+                  hasData: false,
+                  headerImage: "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/TOP_6___Grid_v1-vUeZjoixx1qfYf2Mba1yccHhfcAZWP.png",
+                  badges: ["badge"],
+                  description: "Add your top accounts to see them here.",
+                  address: ""
+                }
+              ]);
+            }
+          } catch (error) {
+            console.error('Error fetching top accounts:', error);
+            // Use fallback data in case of error
             setUsers([
               {
-                username: "No connections found",
+                username: "Error loading connections",
                 avatar: "/placeholder.svg?height=48&width=48",
                 hasData: false,
                 headerImage: "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/TOP_6___Grid_v1-vUeZjoixx1qfYf2Mba1yccHhfcAZWP.png",
                 badges: ["badge"],
-                description: "Add your top accounts to see them here.",
+                description: "There was an error loading your top accounts.",
                 address: ""
               }
-            ])
+            ]);
           }
-        } catch (error) {
-          console.error('Error fetching top accounts:', error);
-          // Use fallback data in case of error
+        } else {
+          // Not connected - use sample data
           setUsers([
             {
-              username: "Error loading connections",
+              username: "@USER#0000",
+              avatar: "/placeholder.svg?height=48&width=48",
+              hasData: true,
+              headerImage: "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/TOP_6___Grid_v1-vUeZjoixx1qfYf2Mba1yccHhfcAZWP.png",
+              badges: ["badge", "badge", "badge"],
+              description: "Lorem ipsum odor amet, consectetuer adipiscing elit. Habitant praesent facilisi vivamus, consequat eleifend etiam eget curabitur.",
+              address: ""
+            },
+            {
+              username: "@USER#0001",
+              avatar: "/placeholder.svg?height=48&width=48",
+              hasData: true,
+              headerImage: "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/TOP_6___Grid_v1-vUeZjoixx1qfYf2Mba1yccHhfcAZWP.png",
+              badges: ["badge", "badge"],
+              description: "Habitant praesent facilisi vivamus, consequat eleifend etiam eget curabitur. Lorem ipsum odor amet, consectetuer adipiscing elit.",
+              address: ""
+            },
+            {
+              username: "@USER#0002",
+              avatar: "/placeholder.svg?height=48&width=48",
+              hasData: true,
+              headerImage: "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/TOP_6___Grid_v1-vUeZjoixx1qfYf2Mba1yccHhfcAZWP.png",
+              badges: ["badge"],
+              description: "Consequat eleifend etiam eget curabitur. Lorem ipsum odor amet, consectetuer adipiscing elit. Habitant praesent facilisi vivamus.",
+              address: ""
+            },
+            {
+              username: "@USER#0003",
               avatar: "/placeholder.svg?height=48&width=48",
               hasData: false,
               headerImage: "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/TOP_6___Grid_v1-vUeZjoixx1qfYf2Mba1yccHhfcAZWP.png",
-              badges: ["badge"],
-              description: "There was an error loading your top accounts.",
+              badges: [],
+              description: "No profile data available.",
               address: ""
-            }
+            },
+            {
+              username: "@USER#0004",
+              avatar: "/placeholder.svg?height=48&width=48",
+              hasData: false,
+              headerImage: "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/TOP_6___Grid_v1-vUeZjoixx1qfYf2Mba1yccHhfcAZWP.png",
+              badges: [],
+              description: "No profile data available.",
+              address: ""
+            },
+            {
+              username: "@USER#0005",
+              avatar: "/placeholder.svg?height=48&width=48",
+              hasData: false,
+              headerImage: "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/TOP_6___Grid_v1-vUeZjoixx1qfYf2Mba1yccHhfcAZWP.png",
+              badges: [],
+              description: "No profile data available.",
+              address: ""
+            },
           ]);
-        } finally {
-          // Always set loading to false when done, whether success or error
-          setIsLoading(false);
         }
-      } else {
-        // Not connected - use sample data
+      } catch (error) {
+        console.error('Unexpected error in fetchProfiles:', error);
+        // Set fallback data for any unexpected errors
         setUsers([
           {
-            username: "@USER#0000",
+            username: "Error loading data",
             avatar: "/placeholder.svg?height=48&width=48",
-            hasData: true,
-            headerImage: "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/TOP_6___Grid_v1-vUeZjoixx1qfYf2Mba1yccHhfcAZWP.png",
-            badges: ["badge", "badge", "badge"],
-            description: "Lorem ipsum odor amet, consectetuer adipiscing elit. Habitant praesent facilisi vivamus, consequat eleifend etiam eget curabitur.",
-            address: ""
-          },
-          {
-            username: "@USER#0001",
-            avatar: "/placeholder.svg?height=48&width=48",
-            hasData: true,
-            headerImage: "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/TOP_6___Grid_v1-vUeZjoixx1qfYf2Mba1yccHhfcAZWP.png",
-            badges: ["badge", "badge"],
-            description: "Habitant praesent facilisi vivamus, consequat eleifend etiam eget curabitur. Lorem ipsum odor amet, consectetuer adipiscing elit.",
-            address: ""
-          },
-          {
-            username: "@USER#0002",
-            avatar: "/placeholder.svg?height=48&width=48",
-            hasData: true,
+            hasData: false,
             headerImage: "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/TOP_6___Grid_v1-vUeZjoixx1qfYf2Mba1yccHhfcAZWP.png",
             badges: ["badge"],
-            description: "Consequat eleifend etiam eget curabitur. Lorem ipsum odor amet, consectetuer adipiscing elit. Habitant praesent facilisi vivamus.",
+            description: "There was an unexpected error loading data.",
             address: ""
-          },
-          {
-            username: "@USER#0003",
-            avatar: "/placeholder.svg?height=48&width=48",
-            hasData: false,
-            headerImage: "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/TOP_6___Grid_v1-vUeZjoixx1qfYf2Mba1yccHhfcAZWP.png",
-            badges: [],
-            description: "No profile data available.",
-            address: ""
-          },
-          {
-            username: "@USER#0004",
-            avatar: "/placeholder.svg?height=48&width=48",
-            hasData: false,
-            headerImage: "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/TOP_6___Grid_v1-vUeZjoixx1qfYf2Mba1yccHhfcAZWP.png",
-            badges: [],
-            description: "No profile data available.",
-            address: ""
-          },
-          {
-            username: "@USER#0005",
-            avatar: "/placeholder.svg?height=48&width=48",
-            hasData: false,
-            headerImage: "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/TOP_6___Grid_v1-vUeZjoixx1qfYf2Mba1yccHhfcAZWP.png",
-            badges: [],
-            description: "No profile data available.",
-            address: ""
-          },
-        ])
-        // Make sure to set loading to false here too
+          }
+        ]);
+      } finally {
+        // Mark that we've attempted to fetch
+        hasFetchedRef.current = true;
+        // Always set loading to false when done
         setIsLoading(false);
       }
-    }
+    };
     
-    // Call the fetch function
-    fetchProfiles();
+    // Call the fetch function with a small delay to prevent rapid re-renders
+    const timeoutId = setTimeout(() => {
+      fetchProfiles();
+    }, 100);
     
-    // Add a cleanup function to set loading to false if component unmounts during loading
+    // Cleanup function
     return () => {
+      clearTimeout(timeoutId);
       setIsLoading(false);
     };
-  }, [profileConnected, profileAddress, retrieveMetadataFromProfile, retrieveLSP3ProfileData])
+  }, [profileConnected, profileAddress, retrieveMetadataFromProfile, retrieveLSP3ProfileData]);
 
   const handleCardClick = (cardId: string) => {
     // Find the user index that matches the clicked card
