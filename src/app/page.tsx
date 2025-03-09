@@ -56,17 +56,29 @@ export default function Top6Page() {
           // Process this batch in parallel
           const batchPromises = batch.map(async (address) => {
             try {
-              const profileData = await retrieveLSP3ProfileData(address, 'LSP3Profile');
-              // Add debug logs to see what comes back from the profile
-              console.log(`LSP3 Profile for ${address}:`, profileData);
+              // Add custom error handling for the decoding issue
+              let profileData = null;
+              try {
+                profileData = await retrieveLSP3ProfileData(address, 'LSP3Profile');
+                // Add debug logs to see what comes back from the profile
+                console.log(`LSP3 Profile for ${address}:`, profileData);
+              } catch (decodingError) {
+                console.warn(`Decoding error for ${address}:`, decodingError);
+                // If it's the specific bytes decoding error, we'll still proceed with a null profile
+                console.log(`Falling back to default profile for ${address} due to decoding error`);
+                profileData = { value: null };
+              }
               
               // Type assertion to access properties safely
               const profileValue = profileData?.value as Record<string, unknown> || {};
               
+              // Check if we actually have profile data despite potential decoding issues
+              const hasValidData = profileValue && Object.keys(profileValue).length > 0;
+              
               return {
                 username: (profileValue.name as string) || address.substring(0, 6) + '...' + address.substring(address.length - 4),
                 avatar: ((profileValue.profileImage as Array<{url: string}>)?.[0]?.url) || "/placeholder.svg?height=48&width=48",
-                hasData: !!profileValue,
+                hasData: hasValidData,
                 headerImage: ((profileValue.backgroundImage as Array<{url: string}>)?.[0]?.url) || "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/TOP_6___Grid_v1-vUeZjoixx1qfYf2Mba1yccHhfcAZWP.png",
                 badges: ["badge"],
                 description: (profileValue.description as string) || "No description available.",
