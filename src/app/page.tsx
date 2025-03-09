@@ -40,14 +40,8 @@ export default function Top6Page() {
     retrieveLSP3ProfileData
   } = useUPMetadata()
 
-  // Add a ref to track if we've already attempted to fetch
-  const hasFetchedRef = useRef(false);
-  
   // Fetch user profiles when connected
   useEffect(() => {
-    // Skip if we've already fetched once
-    if (hasFetchedRef.current) return;
-    
     // Move fetchProfilesWithRateLimiting inside useEffect to avoid dependency issues
     const fetchProfilesWithRateLimiting = async (addresses: string[]): Promise<UserWithProfile[]> => {
       const profiles: UserWithProfile[] = [];
@@ -63,6 +57,9 @@ export default function Top6Page() {
           const batchPromises = batch.map(async (address) => {
             try {
               const profileData = await retrieveLSP3ProfileData(address, 'LSP3Profile');
+              // Add debug logs to see what comes back from the profile
+              console.log(`LSP3 Profile for ${address}:`, profileData);
+              
               // Type assertion to access properties safely
               const profileValue = profileData?.value as Record<string, unknown> || {};
               
@@ -126,6 +123,9 @@ export default function Top6Page() {
               profileAddress,
               'MyTopAccounts'
             );
+            
+            // Add debug logs to see the accounts data
+            console.log('Top accounts data:', topAccountsData);
             
             // If we have connections, fetch their profile data
             if (topAccountsData && Array.isArray(topAccountsData.value)) {
@@ -254,8 +254,6 @@ export default function Top6Page() {
           }
         ]);
       } finally {
-        // Mark that we've attempted to fetch
-        hasFetchedRef.current = true;
         // Always set loading to false when done
         setIsLoading(false);
       }
@@ -263,6 +261,8 @@ export default function Top6Page() {
     
     // Call the fetch function with a small delay to prevent rapid re-renders
     const timeoutId = setTimeout(() => {
+      console.log('Fetching profiles with profile connection state:', profileConnected);
+      console.log('Profile address:', profileAddress);
       fetchProfiles();
     }, 100);
     
@@ -315,6 +315,15 @@ export default function Top6Page() {
     }
   }, [])
 
+  // Add a button to manually trigger data refresh
+  const refreshData = () => {
+    console.log('Manual refresh triggered');
+    setIsLoading(true);
+    // Force a re-evaluation of the useEffect by toggling a state
+    setIsConnected(prev => !prev);
+    setTimeout(() => setIsConnected(prev => !prev), 100);
+  };
+
   return (
     <div className="h-screen w-screen overflow-hidden bg-[#4a044e] text-white">
       {isLoading && (
@@ -331,6 +340,15 @@ export default function Top6Page() {
           >
             <ChevronLeft className="w-[clamp(1.5rem,3vw,3rem)] h-[clamp(1.5rem,3vw,3rem)]" />
             <span>{isConnected ? "Connected" : "Click to Connect"}</span>
+          </Button>
+          
+          {/* Add a debug/refresh button */}
+          <Button
+            variant="link"
+            className="text-white p-0 ml-4 flex items-center gap-[2%] text-[clamp(0.7rem,1.5vw,1rem)] font-light"
+            onClick={refreshData}
+          >
+            <span>Refresh Data</span>
           </Button>
         </div>
         <div className="flex-1 px-[0.67%] overflow-hidden">
