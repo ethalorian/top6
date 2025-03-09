@@ -59,7 +59,7 @@ export default function Top6Page() {
   const { connectProfile } = useUPProvider();
   
   // Function to handle connect button click
-  const handleConnect = async (e: React.MouseEvent) => {
+  const handleConnect = async (e: React.MouseEvent<HTMLButtonElement>): Promise<void> => {
     e.preventDefault();
     console.log('Connect button clicked');
     
@@ -77,7 +77,8 @@ export default function Top6Page() {
   };
 
   // Fetch user profiles when connected
-  // eslint-disable-next-line react-hooks/exhaustive-deps - Intentionally excluding retrieveMetadataFromProfile and retrieveLSP3ProfileData to prevent re-renders
+  /* eslint-disable react-hooks/exhaustive-deps */
+  // Intentionally excluding retrieveMetadataFromProfile and retrieveLSP3ProfileData to prevent re-renders
   useEffect(() => {
     // Move fetchProfilesWithRateLimiting inside useEffect to avoid dependency issues
     const fetchProfilesWithRateLimiting = async (addresses: string[]): Promise<UserWithProfile[]> => {
@@ -91,7 +92,7 @@ export default function Top6Page() {
         
         try {
           // Process this batch in parallel
-          const batchPromises = batch.map(async (address) => {
+          const batchPromises = batch.map(async (address: string): Promise<UserWithProfile> => {
             try {
               console.log(`Processing profile for address: ${address}`);
               // Add custom error handling for the decoding issue
@@ -234,7 +235,7 @@ export default function Top6Page() {
           
           // Add delay before next batch (but not after the last batch)
           if (i + batchSize < addresses.length) {
-            await new Promise(resolve => setTimeout(resolve, delayBetweenBatches));
+            await new Promise<void>((resolve) => setTimeout(resolve, delayBetweenBatches));
           }
         } catch (error) {
           console.error(`Error processing batch starting at index ${i}:`, error);
@@ -424,8 +425,9 @@ export default function Top6Page() {
       setIsLoading(false);
     };
   }, [profileConnected, profileAddress]);
+  /* eslint-enable react-hooks/exhaustive-deps */
 
-  const handleCardClick = (cardId: string) => {
+  const handleCardClick = (cardId: string): void => {
     // Find the user index that matches the clicked card
     const userIndex = users.findIndex(user => user.username === cardId);
     
@@ -447,15 +449,17 @@ export default function Top6Page() {
     }
   }
 
-  const resetPopovers = () => {
-    setSelectedCardId(null)
-    setShowSearchPanel(false)
+  const resetPopovers = (): void => {
+    setSelectedCardId(null);
+    setShowSearchPanel(false);
   }
 
   // Handle clicks outside of cards and popovers
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+  /* eslint-disable react-hooks/exhaustive-deps */
+  // Excluding resetPopovers to prevent re-attaching the event listener on each render
   useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
+    // Use the correct MouseEvent type from DOM API, not React's MouseEvent
+    const handleClickOutside = (event: globalThis.MouseEvent): void => {
       // Check if click is outside both the popover and cards container
       if (
         popoverRef.current &&
@@ -463,15 +467,16 @@ export default function Top6Page() {
         cardsContainerRef.current &&
         !cardsContainerRef.current.contains(event.target as Node)
       ) {
-        resetPopovers()
+        resetPopovers();
       }
-    }
+    };
 
-    document.addEventListener("mousedown", handleClickOutside)
+    document.addEventListener("mousedown", handleClickOutside);
     return () => {
-      document.removeEventListener("mousedown", handleClickOutside)
-    }
-  }, []) // We're excluding resetPopovers to prevent re-attaching the event listener on each render
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, []); // We're excluding resetPopovers to prevent re-attaching the event listener on each render
+  /* eslint-enable react-hooks/exhaustive-deps */
 
   return (
     <div className="h-screen w-screen overflow-hidden bg-[#4a044e] text-white">
@@ -485,7 +490,7 @@ export default function Top6Page() {
           <Button
             variant="link"
             className="text-white p-0 flex items-center gap-[2%] text-[clamp(0.7rem,1.5vw,1rem)] font-light"
-            onClick={(e) => {
+            onClick={(e: React.MouseEvent<HTMLButtonElement>): void => {
               e.preventDefault();
               console.log('Connection toggled');
               handleConnect(e);
@@ -499,7 +504,7 @@ export default function Top6Page() {
           <Button
             variant="link"
             className="text-white p-0 ml-4 flex items-center gap-[2%] text-[clamp(0.7rem,1.5vw,1rem)] font-light"
-            onClick={(e) => {
+            onClick={(e: React.MouseEvent<HTMLButtonElement>): void => {
               e.preventDefault();
               console.log('Refresh triggered');
               refreshData();
