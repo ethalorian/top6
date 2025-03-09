@@ -10,11 +10,11 @@ import {
   decodeMetadata, 
   schema, 
   getKeyByName,
-  ERC725Value,
-  DecodedData
+  ERC725Value
 } from '../utils/ERC725Utils';
 import { decodeERC725YValue } from '../utils/ethersAbiDecoder';
 import { useState } from 'react';
+import LSP3ProfileMetadata from '@erc725/erc725.js/schemas/LSP3ProfileMetadata.json';
 
 // Extract the ABI from the imported JSON
 const LSP0ERC725AccountABI = LSP0ERC725Account.abi;
@@ -41,6 +41,22 @@ export interface MetadataAction {
   txHash: string | null;
 }
 
+// Define schema types
+export type SchemaType = 'custom' | 'LSP3Profile';
+
+// Create a map of schemas
+const schemas = {
+  custom: schema, // Your existing custom schema
+  LSP3Profile: LSP3ProfileMetadata,
+};
+
+// Use the imported type or rename the local interface
+export type DecodedMetadata = {
+  name: string;
+  key: string;
+  value: any;
+};
+
 /**
  * React hook for interacting with UP metadata
  */
@@ -61,7 +77,8 @@ export function useUPMetadata() {
    */
   const storeMetadataOnProfile = async (
     schemaName: string,
-    value: ERC725Value
+    value: ERC725Value,
+    schemaType: SchemaType = 'custom'
   ): Promise<string> => {
     if (!profileConnected || accounts.length === 0) {
       throw new Error('No Universal Profile connected');
@@ -93,9 +110,10 @@ export function useUPMetadata() {
         value = value.map(v => v.toLowerCase());
       }
       
-      console.log('Encoding metadata for:', schemaName, 'Value:', value);
+      console.log('Encoding metadata for:', schemaName, 'Value:', value, 'Schema:', schemaType);
       
-      const encodedData = encodeMetadata(schemaName, value);
+      // Use the appropriate schema for encoding
+      const encodedData = encodeMetadata(schemaName, value, schemas[schemaType]);
       
       console.log('Encoded data keys:', encodedData.keys);
       console.log('Encoded data values:', encodedData.values);
@@ -210,15 +228,19 @@ export function useUPMetadata() {
    */
   const retrieveMetadataFromProfile = async (
     profileAddress: string,
-    keyOrName: string
-  ): Promise<DecodedData> => {
+    keyOrName: string,
+    schemaType: SchemaType = 'custom'
+  ): Promise<DecodedMetadata> => {
     setState({ loading: true, error: null, txHash: null });
     
     try {
+      // Use the appropriate schema to get the key
+      const selectedSchema = schemas[schemaType];
+      
       // Check if we're using a name or a key
       const key = keyOrName.startsWith('0x') 
         ? keyOrName 
-        : getKeyByName(keyOrName) || keyOrName;
+        : getKeyByName(keyOrName, selectedSchema) || keyOrName;
       
       // Create the function data for getData(bytes32)
       const functionSignature = '0x54f6127f'; // keccak256("getData(bytes32)") first 4 bytes
@@ -235,7 +257,7 @@ export function useUPMetadata() {
       try {
         console.log('Trying to decode with ethers ABI decoder...');
         // Get schema item to determine the valueType
-        const schemaItem = schema.find(item => item.key === key || item.name === keyOrName);
+        const schemaItem = selectedSchema.find(item => item.key === key || item.name === keyOrName);
         const valueType = schemaItem?.valueType || 'address[]'; // Default to address[] if schema not found
         
         // Decode using ethers ABI decoder which handles the correct format
@@ -253,7 +275,7 @@ export function useUPMetadata() {
         
         // As a fallback, try ERC725 decoder
         try {
-          const erc725js = new ERC725(schema);
+          const erc725js = new ERC725(selectedSchema);
           const decodedData = erc725js.decodeData([
             { keyName: key, value: rawResult }
           ]);
@@ -323,7 +345,7 @@ export function useUPMetadata() {
   /**
    * Retrieve metadata from the connected Universal Profile
    */
-  const retrieveMyMetadata = async (keyOrName: string): Promise<DecodedData | null> => {
+  const retrieveMyMetadata = async (keyOrName: string): Promise<DecodedMetadata | null> => {
     if (!profileConnected || accounts.length === 0) {
       throw new Error('No Universal Profile connected');
     }
@@ -340,6 +362,36 @@ export function useUPMetadata() {
     }
   };
   
+  /**
+   * Retrieve LSP3 Profile metadata from any Universal Profile
+   */
+  const retrieveLSP3ProfileData = async (
+    profileAddress: string,
+    keyOrName: string
+  ): Promise<DecodedMetadata> => {
+    return retrieveMetadataFromProfile(profileAddress, keyOrName, 'LSP3Profile');
+  };
+  
+  /**
+   * Retrieve LSP3 Profile metadata from the connected Universal Profile
+   */
+  const retrieveMyLSP3ProfileData = async (keyOrName: string): Promise<DecodedMetadata | null> => {
+    if (!profileConnected || accounts.length === 0) {
+      throw new Error('No Universal Profile connected');
+    }
+    
+    setState({ loading: true, error: null, txHash: null });
+    
+    try {
+      return await retrieveLSP3ProfileData(accounts[0], keyOrName);
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      console.error('Error retrieving LSP3 metadata:', error);
+      setState({ loading: false, error: errorMessage, txHash: null });
+      throw error;
+    }
+  };
+  
   return {
     // State
     profileAddress: accounts[0],
@@ -350,6 +402,10 @@ export function useUPMetadata() {
     storeMetadataOnProfile,
     retrieveMetadataFromProfile,
     retrieveMyMetadata,
+    
+    // LSP3 specific methods
+    retrieveLSP3ProfileData,
+    retrieveMyLSP3ProfileData,
     
     // Re-export utility functions
     encodeMetadata,

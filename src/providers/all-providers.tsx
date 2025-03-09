@@ -6,8 +6,8 @@ import { UPProvider } from './up-provider';
 export function Providers({ children }: { children: React.ReactNode }) {
   return (
     <UPProvider>
-      {/* Add other providers here if needed */}
-      {children}
+        {/* Add other providers here if needed */}
+        {children}
     </UPProvider>
   );
 }

@@ -29,13 +29,15 @@ export interface DecodedData {
  * Encodes metadata according to ERC725 schema
  * @param schemaName Name of the schema element to encode
  * @param value Value to encode
+ * @param customSchema Custom schema to use
  * @returns Encoded data with keys and values
  */
 export function encodeMetadata(
   schemaName: string,
-  value: ERC725Value
+  value: ERC725Value,
+  customSchema = schema
 ): { keys: string[]; values: string[] } {
-  const erc725js = new ERC725(schema);
+  const erc725js = new ERC725(customSchema);
   
   // Process value for ERC725.js compatibility
   let processedValue: string | string[] | number | boolean;
@@ -60,11 +62,13 @@ export function encodeMetadata(
  * Decodes metadata according to ERC725 schema
  * @param keys The keys from the encoded data
  * @param values The values from the encoded data
+ * @param customSchema Custom schema to use
  * @returns Decoded data
  */
 export function decodeMetadata(
   keys: string[],
-  values: string[]
+  values: string[],
+  customSchema = schema
 ): DecodedData[] {
   if (!keys.length || !values.length) {
     return [];
@@ -77,7 +81,7 @@ export function decodeMetadata(
     const value = values[i];
     
     // Find the schema item for this key
-    const schemaItem = schema.find(item => item.key === key);
+    const schemaItem = customSchema.find(item => item.key === key);
     
     if (schemaItem) {
       // For address arrays, use the ethers decoder
@@ -99,7 +103,7 @@ export function decodeMetadata(
       
       // Standard ERC725.js decoding for other types
       try {
-        const erc725js = new ERC725(schema);
+        const erc725js = new ERC725(customSchema);
         const decodedData = erc725js.decodeData([
           { keyName: key, value }
         ]);
@@ -144,20 +148,22 @@ export function decodeMetadataSingle(
 /**
  * Get the key from schema by name
  * @param name Schema name
+ * @param customSchema Custom schema to use
  * @returns Key string or undefined if not found
  */
-export function getKeyByName(name: string): string | undefined {
-  const schemaItem = schema.find(item => item.name === name);
+export function getKeyByName(name: string, customSchema = schema): string | undefined {
+  const schemaItem = customSchema.find(item => item.name === name);
   return schemaItem?.key;
 }
 
 /**
  * Get a schema item by name or key
  * @param nameOrKey Schema name or key
+ * @param customSchema Custom schema to use
  * @returns Schema item or undefined if not found
  */
-export function getSchemaItem(nameOrKey: string): ERC725JSONSchema | undefined {
-  return schema.find(item => 
+export function getSchemaItem(nameOrKey: string, customSchema = schema): ERC725JSONSchema | undefined {
+  return customSchema.find(item => 
     item.name === nameOrKey || item.key === nameOrKey
   );
 }
