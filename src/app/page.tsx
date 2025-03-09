@@ -26,7 +26,6 @@ const DEFAULT_HEADER_IMAGE = "https://hebbkx1anhila5yf.public.blob.vercel-storag
 export default function Top6Page() {
   const [showSearchPanel, setShowSearchPanel] = useState(false)
   const [selectedUser, setSelectedUser] = useState<number | null>(null)
-  const [isConnected, setIsConnected] = useState(false)
   const [selectedCardId, setSelectedCardId] = useState<string | null>(null)
   const [users, setUsers] = useState<UserWithProfile[]>([])
   //const [profiles, setProfiles] = useState<Profile[]>([])
@@ -72,16 +71,13 @@ export default function Top6Page() {
     try {
       const success = await connectProfile();
       console.log(`Connection attempt ${success ? 'succeeded' : 'failed'}`);
-      
-      // Update local connected state based on provider state
-      setIsConnected(success);
     } catch (error) {
       console.error('Error connecting to profile:', error);
     }
   };
 
   // Fetch user profiles when connected
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+  // eslint-disable-next-line react-hooks/exhaustive-deps - Intentionally excluding retrieveMetadataFromProfile and retrieveLSP3ProfileData to prevent re-renders
   useEffect(() => {
     // Move fetchProfilesWithRateLimiting inside useEffect to avoid dependency issues
     const fetchProfilesWithRateLimiting = async (addresses: string[]): Promise<UserWithProfile[]> => {
@@ -268,7 +264,7 @@ export default function Top6Page() {
       
       try {
         if (profileConnected) {
-          setIsConnected(true);
+          setIsLoading(true);
           
           try {
             // Get the user's top accounts using the schema name from your utils file
