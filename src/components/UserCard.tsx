@@ -24,12 +24,17 @@ export function UserCard({
   onClick,
   className = "",
 }: UserCardProps) {
+  const handleClick = (e: React.MouseEvent) => {
+    e.preventDefault(); // Prevent any default navigation
+    onClick();
+  };
+
   return (
     <Card
       className={`w-full border-none rounded-tl-[3px] rounded-bl-[3px] rounded-tr-[9px] rounded-br-[9px] pl-[3%] pr-[2%] py-[3.5%] flex items-center justify-between cursor-pointer transition-all duration-300 min-h-[18%] ${
         isSelected ? "bg-white shadow-md" : "bg-[#94a3b8] hover:bg-[#d9d9d9]"
       } ${className}`}
-      onClick={onClick}
+      onClick={handleClick}
     >
       <div className="flex items-center gap-[4%]">
         <div className="relative w-[clamp(2rem,5vw,3.5rem)] aspect-square mr-[3%]">
@@ -46,8 +51,9 @@ export function UserCard({
         className={`flex items-center justify-center h-[clamp(2rem,4vw,3.5rem)] w-[clamp(2rem,4vw,3.5rem)] p-5 
         ${isSelected ? "text-[#0f172a]" : "text-white"} hover:text-[#4a044e] hover:bg-transparent`}
         onClick={(e) => {
-          e.stopPropagation()
-          onClick()
+          e.stopPropagation();
+          e.preventDefault(); // Prevent any default navigation
+          onClick();
         }}
       >
         <div
@@ -60,4 +66,3 @@ export function UserCard({
     </Card>
   )
 }
-

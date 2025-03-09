@@ -8,6 +8,7 @@ import { ProfilePanel } from "@/components/ProfilePanel"
 import { ChevronLeft } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { useUPMetadata } from "@/hooks/useUPMetadata"
+import { useUPProvider } from "@/providers/up-provider"
 
 type UserWithProfile = {
   username: string;
@@ -54,6 +55,30 @@ export default function Top6Page() {
     retrieveMetadataFromProfile,
     retrieveLSP3ProfileData
   } = useUPMetadata()
+  
+  // Get the connectProfile function from the UPProvider
+  const { connectProfile } = useUPProvider();
+  
+  // Function to handle connect button click
+  const handleConnect = async (e: React.MouseEvent) => {
+    e.preventDefault();
+    console.log('Connect button clicked');
+    
+    if (profileConnected) {
+      console.log('Already connected');
+      return;
+    }
+    
+    try {
+      const success = await connectProfile();
+      console.log(`Connection attempt ${success ? 'succeeded' : 'failed'}`);
+      
+      // Update local connected state based on provider state
+      setIsConnected(success);
+    } catch (error) {
+      console.error('Error connecting to profile:', error);
+    }
+  };
 
   // Fetch user profiles when connected
   // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -408,13 +433,18 @@ export default function Top6Page() {
     // Find the user index that matches the clicked card
     const userIndex = users.findIndex(user => user.username === cardId);
     
+    // Log the action to debug
+    console.log(`Card clicked: ${cardId}, user index: ${userIndex}`);
+    
     if (selectedCardId === cardId) {
       // Clicking the same card again - close everything
+      console.log('Closing selected card');
       setSelectedCardId(null);
       setSelectedUser(null);
       setShowSearchPanel(false);
     } else {
       // Clicking a different card
+      console.log('Opening new card');
       setSelectedCardId(cardId);
       setSelectedUser(userIndex >= 0 ? userIndex : null);
       setShowSearchPanel(false); // Don't show search panel, show profile instead
@@ -459,17 +489,25 @@ export default function Top6Page() {
           <Button
             variant="link"
             className="text-white p-0 flex items-center gap-[2%] text-[clamp(0.7rem,1.5vw,1rem)] font-light"
-            onClick={() => setIsConnected(!isConnected)}
+            onClick={(e) => {
+              e.preventDefault();
+              console.log('Connection toggled');
+              handleConnect(e);
+            }}
           >
             <ChevronLeft className="w-[clamp(1.5rem,3vw,3rem)] h-[clamp(1.5rem,3vw,3rem)]" />
-            <span>{isConnected ? "Connected" : "Click to Connect"}</span>
+            <span>{profileConnected ? "Connected" : "Click to Connect"}</span>
           </Button>
           
           {/* Add a debug/refresh button */}
           <Button
             variant="link"
             className="text-white p-0 ml-4 flex items-center gap-[2%] text-[clamp(0.7rem,1.5vw,1rem)] font-light"
-            onClick={refreshData}
+            onClick={(e) => {
+              e.preventDefault();
+              console.log('Refresh triggered');
+              refreshData();
+            }}
           >
             <span>Refresh Data</span>
           </Button>

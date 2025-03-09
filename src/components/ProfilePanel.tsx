@@ -48,10 +48,22 @@ export function ProfilePanel({ user }: ProfilePanelProps) {
         <p className="text-[#94a3b8] text-[clamp(0.8rem,1.5vw,1.1rem)] mb-auto leading-[1.5]">{user.description}</p>
         {/* Action Buttons */}
         <div className="flex gap-[3%] mt-[4%]">
-          <Button className="bg-[#4a044e] hover:bg-[#3a033e] text-white rounded-sm h-auto py-[3%] px-[5%] flex-1 text-[clamp(0.8rem,1.5vw,1.1rem)]">
+          <Button 
+            className="bg-[#4a044e] hover:bg-[#3a033e] text-white rounded-sm h-auto py-[3%] px-[5%] flex-1 text-[clamp(0.8rem,1.5vw,1.1rem)]"
+            onClick={(e) => {
+              e.preventDefault();
+              console.log('Explore profile clicked');
+            }}
+          >
             Explore Profile
           </Button>
-          <Button className="bg-[#4a044e] hover:bg-[#3a033e] text-white rounded-sm h-auto py-[3%] px-[5%] flex-1 text-[clamp(0.8rem,1.5vw,1.1rem)]">
+          <Button 
+            className="bg-[#4a044e] hover:bg-[#3a033e] text-white rounded-sm h-auto py-[3%] px-[5%] flex-1 text-[clamp(0.8rem,1.5vw,1.1rem)]"
+            onClick={(e) => {
+              e.preventDefault();
+              console.log('Follow clicked');
+            }}
+          >
             <UserPlus className="mr-[2%] h-[clamp(1.6rem,3vw,2.2rem)] w-[clamp(1.6rem,3vw,2.2rem)]" />
             Follow
           </Button>
