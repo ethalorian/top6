@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect, useRef, useCallback } from "react"
+import { useState, useEffect, useRef } from "react"
 import { UserCard } from "@/components/UserCard"
 import { SearchPanel } from "@/components/SearchPanel"
 import { ContentPanel } from "@/components/ContentPanel"
