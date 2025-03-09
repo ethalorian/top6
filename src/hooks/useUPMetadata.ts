@@ -54,7 +54,7 @@ const schemas = {
 export type DecodedMetadata = {
   name: string;
   key: string;
-  value: any;
+  value: unknown;
 };
 
 /**
@@ -411,8 +411,4 @@ export function useUPMetadata() {
     encodeMetadata,
     decodeMetadata,
   };
-}
-
-function handleError(error: Error | unknown) {
-  // Your error handling code
 }

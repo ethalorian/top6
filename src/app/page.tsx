@@ -219,7 +219,7 @@ export default function Top6Page() {
     }
     
     fetchProfiles()
-  }, [profileConnected, profileAddress, retrieveMetadataFromProfile, retrieveLSP3ProfileData])
+  }, [profileConnected, profileAddress, retrieveMetadataFromProfile, retrieveLSP3ProfileData, fetchProfilesWithRateLimiting])
 
   const handleCardClick = (cardId: string) => {
     // Find the user index that matches the clicked card
@@ -265,6 +265,11 @@ export default function Top6Page() {
 
   return (
     <div className="h-screen w-screen overflow-hidden bg-[#4a044e] text-white">
+      {isLoading && (
+        <div className="absolute inset-0 flex items-center justify-center bg-[#4a044e] bg-opacity-70 z-10">
+          <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-white"></div>
+        </div>
+      )}
       <div className="h-full flex flex-col">
         <div className="h-[10%] max-h-[40px] min-h-[25px] pl-[3%] flex items-center">
           <Button
