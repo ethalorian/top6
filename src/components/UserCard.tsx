@@ -5,6 +5,8 @@ import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar"
 
+const NO_PROFILE_IMAGE = "/top6-logo.svg";
+
 interface UserCardProps {
   username: string
   avatar: string
@@ -32,7 +34,7 @@ export function UserCard({
       <div className="flex items-center gap-[4%]">
         <div className="relative w-[clamp(2rem,5vw,3.5rem)] aspect-square mr-[3%]">
           <Avatar className="h-full w-full rounded-md">
-            <AvatarImage src={avatar} alt="User avatar" />
+            <AvatarImage src={avatar || NO_PROFILE_IMAGE} alt="User avatar" />
             <AvatarFallback>UP</AvatarFallback>
           </Avatar>
         </div>

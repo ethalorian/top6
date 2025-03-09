@@ -2,6 +2,9 @@ import Image from "next/image"
 import { Button } from "@/components/ui/button"
 import { UserPlus } from "lucide-react"
 
+const NO_PROFILE_IMAGE = "/top6-logo.svg";
+const DEFAULT_HEADER_IMAGE = "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/TOP_6___Grid_v1-vUeZjoixx1qfYf2Mba1yccHhfcAZWP.png";
+
 interface ProfilePanelProps {
   user: {
     username: string
@@ -17,7 +20,7 @@ export function ProfilePanel({ user }: ProfilePanelProps) {
     <div className="bg-white rounded-sm h-full flex flex-col overflow-hidden w-full">
       {/* Header Image - using percentage of container height instead of fixed height */}
       <div className="h-[30%] relative">
-        <Image src={user.headerImage || "/placeholder.svg"} alt="Profile header" fill className="object-cover" />
+        <Image src={user.headerImage || DEFAULT_HEADER_IMAGE} alt="Profile header" fill className="object-cover" />
       </div>
 
       {/* Profile Content */}
@@ -25,7 +28,7 @@ export function ProfilePanel({ user }: ProfilePanelProps) {
         <div className="flex items-center gap-[3%] mb-[4%]">
           <div className="relative w-[15%] aspect-square">
             <Image
-              src={user.avatar || "/placeholder.svg"}
+              src={user.avatar || NO_PROFILE_IMAGE}
               alt={`${user.username}'s avatar`}
               fill
               className="rounded-full object-cover"

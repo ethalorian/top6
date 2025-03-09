@@ -19,6 +19,9 @@ type UserWithProfile = {
   address: string;
 }
 
+const NO_PROFILE_IMAGE = "/top6-logo.svg";
+const DEFAULT_HEADER_IMAGE = "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/TOP_6___Grid_v1-vUeZjoixx1qfYf2Mba1yccHhfcAZWP.png";
+
 export default function Top6Page() {
   const [showSearchPanel, setShowSearchPanel] = useState(false)
   const [selectedUser, setSelectedUser] = useState<number | null>(null)
@@ -92,7 +95,7 @@ export default function Top6Page() {
                   });
                   
                   // Extract profile image from the data structure
-                  let avatarUrl = "/placeholder.svg?height=48&width=48";
+                  let avatarUrl = NO_PROFILE_IMAGE;
                   if (profileValue.profileImage) {
                     const profileImages = profileValue.profileImage as Array<{url: string}> || [];
                     if (profileImages.length > 0 && profileImages[0].url) {
@@ -102,7 +105,7 @@ export default function Top6Page() {
                   }
                   
                   // Extract background image
-                  let headerImageUrl = "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/TOP_6___Grid_v1-vUeZjoixx1qfYf2Mba1yccHhfcAZWP.png";
+                  let headerImageUrl = DEFAULT_HEADER_IMAGE;
                   if (profileValue.backgroundImage) {
                     const backgroundImages = profileValue.backgroundImage as Array<{url: string}> || [];
                     if (backgroundImages.length > 0 && backgroundImages[0].url) {
@@ -124,9 +127,9 @@ export default function Top6Page() {
                   console.log(`No valid profile data found for ${address}. Using fallback.`);
                   return {
                     username: address.substring(0, 6) + '...' + address.substring(address.length - 4),
-                    avatar: "/placeholder.svg?height=48&width=48",
+                    avatar: NO_PROFILE_IMAGE,
                     hasData: false,
-                    headerImage: "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/TOP_6___Grid_v1-vUeZjoixx1qfYf2Mba1yccHhfcAZWP.png",
+                    headerImage: DEFAULT_HEADER_IMAGE,
                     badges: ["badge"],
                     description: "No profile data available for this address.",
                     address
@@ -147,9 +150,9 @@ export default function Top6Page() {
                     if (nameData && nameData.value) {
                       return {
                         username: nameData.value as string || address.substring(0, 6) + '...' + address.substring(address.length - 4),
-                        avatar: "/placeholder.svg?height=48&width=48",
+                        avatar: NO_PROFILE_IMAGE,
                         hasData: true,
-                        headerImage: "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/TOP_6___Grid_v1-vUeZjoixx1qfYf2Mba1yccHhfcAZWP.png",
+                        headerImage: DEFAULT_HEADER_IMAGE,
                         badges: ["badge"],
                         description: "Profile data partially recovered. Some information may be missing.",
                         address
@@ -157,9 +160,9 @@ export default function Top6Page() {
                     } else {
                       return {
                         username: address.substring(0, 6) + '...' + address.substring(address.length - 4),
-                        avatar: "/placeholder.svg?height=48&width=48",
+                        avatar: NO_PROFILE_IMAGE,
                         hasData: false,
-                        headerImage: "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/TOP_6___Grid_v1-vUeZjoixx1qfYf2Mba1yccHhfcAZWP.png",
+                        headerImage: DEFAULT_HEADER_IMAGE,
                         badges: ["badge"],
                         description: "Could not load profile data due to decoding error.",
                         address
@@ -169,9 +172,9 @@ export default function Top6Page() {
                     console.error(`Recovery attempt failed for ${address}:`, recoveryError);
                     return {
                       username: address.substring(0, 6) + '...' + address.substring(address.length - 4),
-                      avatar: "/placeholder.svg?height=48&width=48",
+                      avatar: NO_PROFILE_IMAGE,
                       hasData: false,
-                      headerImage: "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/TOP_6___Grid_v1-vUeZjoixx1qfYf2Mba1yccHhfcAZWP.png",
+                      headerImage: DEFAULT_HEADER_IMAGE,
                       badges: ["badge"],
                       description: "Recovery failed. Could not load profile data.",
                       address
@@ -182,9 +185,9 @@ export default function Top6Page() {
                   console.log(`Falling back to default profile for ${address} due to decoding error`);
                   return {
                     username: address.substring(0, 6) + '...' + address.substring(address.length - 4),
-                    avatar: "/placeholder.svg?height=48&width=48",
+                    avatar: NO_PROFILE_IMAGE,
                     hasData: false,
-                    headerImage: "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/TOP_6___Grid_v1-vUeZjoixx1qfYf2Mba1yccHhfcAZWP.png",
+                    headerImage: DEFAULT_HEADER_IMAGE,
                     badges: ["badge"],
                     description: "Could not load profile data due to an error.",
                     address
@@ -195,9 +198,9 @@ export default function Top6Page() {
               console.error(`Error fetching profile for ${address}:`, error);
               return {
                 username: address.substring(0, 6) + '...' + address.substring(address.length - 4),
-                avatar: "/placeholder.svg?height=48&width=48",
+                avatar: NO_PROFILE_IMAGE,
                 hasData: false,
-                headerImage: "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/TOP_6___Grid_v1-vUeZjoixx1qfYf2Mba1yccHhfcAZWP.png",
+                headerImage: DEFAULT_HEADER_IMAGE,
                 badges: ["badge"],
                 description: "Could not load profile data.",
                 address
@@ -219,9 +222,9 @@ export default function Top6Page() {
       
       return profiles.length > 0 ? profiles : [{
         username: "Error loading connections",
-        avatar: "/placeholder.svg?height=48&width=48",
+        avatar: NO_PROFILE_IMAGE,
         hasData: false,
-        headerImage: "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/TOP_6___Grid_v1-vUeZjoixx1qfYf2Mba1yccHhfcAZWP.png",
+        headerImage: DEFAULT_HEADER_IMAGE,
         badges: ["badge"],
         description: "There was an error loading your top accounts.",
         address: ""
@@ -266,9 +269,9 @@ export default function Top6Page() {
                 // No connections found, set a default message
                 setUsers([{
                   username: "No connections found",
-                  avatar: "/placeholder.svg?height=48&width=48",
+                  avatar: NO_PROFILE_IMAGE,
                   hasData: false,
-                  headerImage: "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/TOP_6___Grid_v1-vUeZjoixx1qfYf2Mba1yccHhfcAZWP.png",
+                  headerImage: DEFAULT_HEADER_IMAGE,
                   badges: ["badge"],
                   description: "You don't have any connections yet.",
                   address: ""
@@ -279,9 +282,9 @@ export default function Top6Page() {
               // No connections data at all, set a default message
               setUsers([{
                 username: "No Top6 list found",
-                avatar: "/placeholder.svg?height=48&width=48",
+                avatar: NO_PROFILE_IMAGE,
                 hasData: false,
-                headerImage: "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/TOP_6___Grid_v1-vUeZjoixx1qfYf2Mba1yccHhfcAZWP.png",
+                headerImage: DEFAULT_HEADER_IMAGE,
                 badges: ["badge"],
                 description: "You need to create a TOP6 list to see connections here.",
                 address: ""
@@ -294,9 +297,9 @@ export default function Top6Page() {
             setUsers([
               {
                 username: "Error loading connections",
-                avatar: "/placeholder.svg?height=48&width=48",
+                avatar: NO_PROFILE_IMAGE,
                 hasData: false,
-                headerImage: "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/TOP_6___Grid_v1-vUeZjoixx1qfYf2Mba1yccHhfcAZWP.png",
+                headerImage: DEFAULT_HEADER_IMAGE,
                 badges: ["badge"],
                 description: "There was an error loading your top accounts.",
                 address: ""
@@ -309,54 +312,54 @@ export default function Top6Page() {
           setUsers([
             {
               username: "@USER#0000",
-              avatar: "/placeholder.svg?height=48&width=48",
+              avatar: NO_PROFILE_IMAGE,
               hasData: true,
-              headerImage: "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/TOP_6___Grid_v1-vUeZjoixx1qfYf2Mba1yccHhfcAZWP.png",
+              headerImage: DEFAULT_HEADER_IMAGE,
               badges: ["badge", "badge", "badge"],
               description: "Lorem ipsum odor amet, consectetuer adipiscing elit. Habitant praesent facilisi vivamus, consequat eleifend etiam eget curabitur.",
               address: ""
             },
             {
               username: "@USER#0001",
-              avatar: "/placeholder.svg?height=48&width=48",
+              avatar: NO_PROFILE_IMAGE,
               hasData: true,
-              headerImage: "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/TOP_6___Grid_v1-vUeZjoixx1qfYf2Mba1yccHhfcAZWP.png",
+              headerImage: DEFAULT_HEADER_IMAGE,
               badges: ["badge", "badge"],
               description: "Habitant praesent facilisi vivamus, consequat eleifend etiam eget curabitur. Lorem ipsum odor amet, consectetuer adipiscing elit.",
               address: ""
             },
             {
               username: "@USER#0002",
-              avatar: "/placeholder.svg?height=48&width=48",
+              avatar: NO_PROFILE_IMAGE,
               hasData: true,
-              headerImage: "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/TOP_6___Grid_v1-vUeZjoixx1qfYf2Mba1yccHhfcAZWP.png",
+              headerImage: DEFAULT_HEADER_IMAGE,
               badges: ["badge"],
               description: "Consequat eleifend etiam eget curabitur. Lorem ipsum odor amet, consectetuer adipiscing elit. Habitant praesent facilisi vivamus.",
               address: ""
             },
             {
               username: "@USER#0003",
-              avatar: "/placeholder.svg?height=48&width=48",
+              avatar: NO_PROFILE_IMAGE,
               hasData: false,
-              headerImage: "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/TOP_6___Grid_v1-vUeZjoixx1qfYf2Mba1yccHhfcAZWP.png",
+              headerImage: DEFAULT_HEADER_IMAGE,
               badges: [],
               description: "No profile data available.",
               address: ""
             },
             {
               username: "@USER#0004",
-              avatar: "/placeholder.svg?height=48&width=48",
+              avatar: NO_PROFILE_IMAGE,
               hasData: false,
-              headerImage: "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/TOP_6___Grid_v1-vUeZjoixx1qfYf2Mba1yccHhfcAZWP.png",
+              headerImage: DEFAULT_HEADER_IMAGE,
               badges: [],
               description: "No profile data available.",
               address: ""
             },
             {
               username: "@USER#0005",
-              avatar: "/placeholder.svg?height=48&width=48",
+              avatar: NO_PROFILE_IMAGE,
               hasData: false,
-              headerImage: "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/TOP_6___Grid_v1-vUeZjoixx1qfYf2Mba1yccHhfcAZWP.png",
+              headerImage: DEFAULT_HEADER_IMAGE,
               badges: [],
               description: "No profile data available.",
               address: ""
@@ -369,9 +372,9 @@ export default function Top6Page() {
         setUsers([
           {
             username: "Error loading data",
-            avatar: "/placeholder.svg?height=48&width=48",
+            avatar: NO_PROFILE_IMAGE,
             hasData: false,
-            headerImage: "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/TOP_6___Grid_v1-vUeZjoixx1qfYf2Mba1yccHhfcAZWP.png",
+            headerImage: DEFAULT_HEADER_IMAGE,
             badges: ["badge"],
             description: "There was an unexpected error loading data.",
             address: ""
@@ -424,6 +427,7 @@ export default function Top6Page() {
   }
 
   // Handle clicks outside of cards and popovers
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       // Check if click is outside both the popover and cards container
@@ -441,7 +445,7 @@ export default function Top6Page() {
     return () => {
       document.removeEventListener("mousedown", handleClickOutside)
     }
-  }, [])
+  }, []) // We're excluding resetPopovers to prevent re-attaching the event listener on each render
 
   return (
     <div className="h-screen w-screen overflow-hidden bg-[#4a044e] text-white">
