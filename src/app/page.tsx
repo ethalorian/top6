@@ -107,9 +107,11 @@ export default function Top6Page() {
     };
 
     const fetchProfiles = async () => {
+      // Always start with loading state
+      setIsLoading(true);
+      
       if (profileConnected) {
-        setIsConnected(true)
-        setIsLoading(true)
+        setIsConnected(true);
         
         try {
           // Get the user's top accounts using the schema name from your utils file
@@ -142,7 +144,7 @@ export default function Top6Page() {
             ])
           }
         } catch (error) {
-          console.error('Error fetching top accounts:', error)
+          console.error('Error fetching top accounts:', error);
           // Use fallback data in case of error
           setUsers([
             {
@@ -154,9 +156,10 @@ export default function Top6Page() {
               description: "There was an error loading your top accounts.",
               address: ""
             }
-          ])
+          ]);
         } finally {
-          setIsLoading(false)
+          // Always set loading to false when done, whether success or error
+          setIsLoading(false);
         }
       } else {
         // Not connected - use sample data
@@ -216,11 +219,18 @@ export default function Top6Page() {
             address: ""
           },
         ])
-        setIsLoading(false)
+        // Make sure to set loading to false here too
+        setIsLoading(false);
       }
     }
     
-    fetchProfiles()
+    // Call the fetch function
+    fetchProfiles();
+    
+    // Add a cleanup function to set loading to false if component unmounts during loading
+    return () => {
+      setIsLoading(false);
+    };
   }, [profileConnected, profileAddress, retrieveMetadataFromProfile, retrieveLSP3ProfileData])
 
   const handleCardClick = (cardId: string) => {
