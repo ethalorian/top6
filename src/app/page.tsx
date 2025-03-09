@@ -25,12 +25,9 @@ export default function Top6Page() {
   const [isConnected, setIsConnected] = useState(false)
   const [selectedCardId, setSelectedCardId] = useState<string | null>(null)
   const [users, setUsers] = useState<UserWithProfile[]>([])
-  const [loading, setLoading] = useState(true)
-  const [fetchStatus, setFetchStatus] = useState<{
-    loading: boolean;
-    error: string | null;
-    retryCount: number;
-  }>({ loading: true, error: null, retryCount: 0 })
+  //const [profiles, setProfiles] = useState<Profile[]>([])
+  const [isLoading, setIsLoading] = useState(true)
+ // const [error, setError] = useState<string | null>(null)
 
   const popoverRef = useRef<HTMLDivElement>(null)
   const cardsContainerRef = useRef<HTMLDivElement>(null)
@@ -110,7 +107,7 @@ export default function Top6Page() {
     const fetchProfiles = async () => {
       if (profileConnected) {
         setIsConnected(true)
-        setLoading(true)
+        setIsLoading(true)
         
         try {
           // Get the user's top accounts using the schema name from your utils file
@@ -157,7 +154,7 @@ export default function Top6Page() {
             }
           ])
         } finally {
-          setLoading(false)
+          setIsLoading(false)
         }
       } else {
         // Not connected - use sample data
@@ -217,7 +214,7 @@ export default function Top6Page() {
             address: ""
           },
         ])
-        setLoading(false)
+        setIsLoading(false)
       }
     }
     

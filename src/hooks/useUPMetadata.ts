@@ -412,3 +412,7 @@ export function useUPMetadata() {
     decodeMetadata,
   };
 }
+
+function handleError(error: Error | unknown) {
+  // Your error handling code
+}
