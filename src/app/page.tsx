@@ -55,14 +55,16 @@ export default function Top6Page() {
         const batchPromises = batch.map(async (address) => {
           try {
             const profileData = await retrieveLSP3ProfileData(address, 'LSP3Profile');
-            // Create a basic profile with the data you have
+            // Type assertion to access properties safely
+            const profileValue = profileData?.value as Record<string, any> || {};
+            
             return {
-              username: profileData?.value?.name || address.substring(0, 6) + '...' + address.substring(address.length - 4),
-              avatar: profileData?.value?.profileImage?.[0]?.url || "/placeholder.svg?height=48&width=48",
-              hasData: !!profileData?.value,
-              headerImage: profileData?.value?.backgroundImage?.[0]?.url || "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/TOP_6___Grid_v1-vUeZjoixx1qfYf2Mba1yccHhfcAZWP.png",
+              username: profileValue.name || address.substring(0, 6) + '...' + address.substring(address.length - 4),
+              avatar: profileValue.profileImage?.[0]?.url || "/placeholder.svg?height=48&width=48",
+              hasData: !!profileValue,
+              headerImage: profileValue.backgroundImage?.[0]?.url || "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/TOP_6___Grid_v1-vUeZjoixx1qfYf2Mba1yccHhfcAZWP.png",
               badges: ["badge"],
-              description: profileData?.value?.description || "No description available.",
+              description: profileValue.description || "No description available.",
               address
             };
           } catch (error) {
