@@ -40,72 +40,72 @@ export default function Top6Page() {
     retrieveLSP3ProfileData
   } = useUPMetadata()
 
-  // Add this function before you use it
-  const fetchProfilesWithRateLimiting = async (addresses: string[]): Promise<UserWithProfile[]> => {
-    const profiles: UserWithProfile[] = [];
-    const batchSize = 2; // Process 2 profiles at a time
-    const delayBetweenBatches = 1000; // 1 second delay between batches
-    
-    // Process addresses in batches
-    for (let i = 0; i < addresses.length; i += batchSize) {
-      const batch = addresses.slice(i, i + batchSize);
-      
-      try {
-        // Process this batch in parallel
-        const batchPromises = batch.map(async (address) => {
-          try {
-            const profileData = await retrieveLSP3ProfileData(address, 'LSP3Profile');
-            // Type assertion to access properties safely
-            const profileValue = profileData?.value as Record<string, any> || {};
-            
-            return {
-              username: profileValue.name || address.substring(0, 6) + '...' + address.substring(address.length - 4),
-              avatar: profileValue.profileImage?.[0]?.url || "/placeholder.svg?height=48&width=48",
-              hasData: !!profileValue,
-              headerImage: profileValue.backgroundImage?.[0]?.url || "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/TOP_6___Grid_v1-vUeZjoixx1qfYf2Mba1yccHhfcAZWP.png",
-              badges: ["badge"],
-              description: profileValue.description || "No description available.",
-              address
-            };
-          } catch (error) {
-            console.error(`Error fetching profile for ${address}:`, error);
-            return {
-              username: address.substring(0, 6) + '...' + address.substring(address.length - 4),
-              avatar: "/placeholder.svg?height=48&width=48",
-              hasData: false,
-              headerImage: "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/TOP_6___Grid_v1-vUeZjoixx1qfYf2Mba1yccHhfcAZWP.png",
-              badges: ["badge"],
-              description: "Could not load profile data.",
-              address
-            };
-          }
-        });
-        
-        const batchResults = await Promise.all(batchPromises);
-        profiles.push(...batchResults);
-        
-        // Add delay before next batch (but not after the last batch)
-        if (i + batchSize < addresses.length) {
-          await new Promise(resolve => setTimeout(resolve, delayBetweenBatches));
-        }
-      } catch (error) {
-        console.error(`Error processing batch starting at index ${i}:`, error);
-      }
-    }
-    
-    return profiles.length > 0 ? profiles : [{
-      username: "Error loading connections",
-      avatar: "/placeholder.svg?height=48&width=48",
-      hasData: false,
-      headerImage: "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/TOP_6___Grid_v1-vUeZjoixx1qfYf2Mba1yccHhfcAZWP.png",
-      badges: ["badge"],
-      description: "There was an error loading your top accounts.",
-      address: ""
-    }];
-  };
-
   // Fetch user profiles when connected
   useEffect(() => {
+    // Move fetchProfilesWithRateLimiting inside useEffect to avoid dependency issues
+    const fetchProfilesWithRateLimiting = async (addresses: string[]): Promise<UserWithProfile[]> => {
+      const profiles: UserWithProfile[] = [];
+      const batchSize = 2; // Process 2 profiles at a time
+      const delayBetweenBatches = 1000; // 1 second delay between batches
+      
+      // Process addresses in batches
+      for (let i = 0; i < addresses.length; i += batchSize) {
+        const batch = addresses.slice(i, i + batchSize);
+        
+        try {
+          // Process this batch in parallel
+          const batchPromises = batch.map(async (address) => {
+            try {
+              const profileData = await retrieveLSP3ProfileData(address, 'LSP3Profile');
+              // Type assertion to access properties safely
+              const profileValue = profileData?.value as Record<string, unknown> || {};
+              
+              return {
+                username: (profileValue.name as string) || address.substring(0, 6) + '...' + address.substring(address.length - 4),
+                avatar: ((profileValue.profileImage as Array<{url: string}>)?.[0]?.url) || "/placeholder.svg?height=48&width=48",
+                hasData: !!profileValue,
+                headerImage: ((profileValue.backgroundImage as Array<{url: string}>)?.[0]?.url) || "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/TOP_6___Grid_v1-vUeZjoixx1qfYf2Mba1yccHhfcAZWP.png",
+                badges: ["badge"],
+                description: (profileValue.description as string) || "No description available.",
+                address
+              };
+            } catch (error) {
+              console.error(`Error fetching profile for ${address}:`, error);
+              return {
+                username: address.substring(0, 6) + '...' + address.substring(address.length - 4),
+                avatar: "/placeholder.svg?height=48&width=48",
+                hasData: false,
+                headerImage: "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/TOP_6___Grid_v1-vUeZjoixx1qfYf2Mba1yccHhfcAZWP.png",
+                badges: ["badge"],
+                description: "Could not load profile data.",
+                address
+              };
+            }
+          });
+          
+          const batchResults = await Promise.all(batchPromises);
+          profiles.push(...batchResults);
+          
+          // Add delay before next batch (but not after the last batch)
+          if (i + batchSize < addresses.length) {
+            await new Promise(resolve => setTimeout(resolve, delayBetweenBatches));
+          }
+        } catch (error) {
+          console.error(`Error processing batch starting at index ${i}:`, error);
+        }
+      }
+      
+      return profiles.length > 0 ? profiles : [{
+        username: "Error loading connections",
+        avatar: "/placeholder.svg?height=48&width=48",
+        hasData: false,
+        headerImage: "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/TOP_6___Grid_v1-vUeZjoixx1qfYf2Mba1yccHhfcAZWP.png",
+        badges: ["badge"],
+        description: "There was an error loading your top accounts.",
+        address: ""
+      }];
+    };
+
     const fetchProfiles = async () => {
       if (profileConnected) {
         setIsConnected(true)
@@ -221,7 +221,7 @@ export default function Top6Page() {
     }
     
     fetchProfiles()
-  }, [profileConnected, profileAddress, retrieveMetadataFromProfile, retrieveLSP3ProfileData, fetchProfilesWithRateLimiting])
+  }, [profileConnected, profileAddress, retrieveMetadataFromProfile, retrieveLSP3ProfileData])
 
   const handleCardClick = (cardId: string) => {
     // Find the user index that matches the clicked card
