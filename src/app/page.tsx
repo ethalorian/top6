@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect, useRef } from "react"
+import { useState, useEffect, useRef, useCallback } from "react"
 import { UserCard } from "@/components/UserCard"
 import { SearchPanel } from "@/components/SearchPanel"
 import { ContentPanel } from "@/components/ContentPanel"
@@ -31,6 +31,16 @@ export default function Top6Page() {
 
   const popoverRef = useRef<HTMLDivElement>(null)
   const cardsContainerRef = useRef<HTMLDivElement>(null)
+  const fetchedRef = useRef<boolean>(false) // Add a ref to track if we've already fetched profiles
+  const fetchProfilesRef = useRef<(() => Promise<void>) | null>(null) // Ref to store the fetchProfiles function
+  
+  // Define the refresh function using useCallback
+  const refreshData = useCallback(() => {
+    console.log('Manually refreshing data...');
+    fetchedRef.current = false; // Reset the fetchedRef to allow a new fetch
+    setIsLoading(true);
+    fetchProfilesRef.current && fetchProfilesRef.current();
+  }, []);
   
   // Use the UPMetadata hook
   const { 
@@ -56,12 +66,69 @@ export default function Top6Page() {
           // Process this batch in parallel
           const batchPromises = batch.map(async (address) => {
             try {
+              console.log(`Processing profile for address: ${address}`);
               // Add custom error handling for the decoding issue
               let profileData = null;
               try {
+                // First, try to get LSP3Profile data
                 profileData = await retrieveLSP3ProfileData(address, 'LSP3Profile');
-                // Add debug logs to see what comes back from the profile
-                console.log(`LSP3 Profile for ${address}:`, profileData);
+                console.log(`LSP3 Profile raw data for ${address}:`, profileData);
+                
+                // Check if we got valid data
+                if (profileData && profileData.value) {
+                  // Create a properly structured user profile
+                  const profileValue = profileData.value as Record<string, unknown> || {};
+                  const hasValidData = profileValue && Object.keys(profileValue).length > 0;
+                  
+                  console.log(`Profile data extracted for ${address}:`, {
+                    name: profileValue.name,
+                    avatar: profileValue.profileImage,
+                    background: profileValue.backgroundImage,
+                    description: profileValue.description,
+                    hasData: hasValidData
+                  });
+                  
+                  // Extract profile image from the data structure
+                  let avatarUrl = "/placeholder.svg?height=48&width=48";
+                  if (profileValue.profileImage) {
+                    const profileImages = profileValue.profileImage as Array<{url: string}> || [];
+                    if (profileImages.length > 0 && profileImages[0].url) {
+                      avatarUrl = profileImages[0].url;
+                      console.log(`Found avatar URL for ${address}: ${avatarUrl}`);
+                    }
+                  }
+                  
+                  // Extract background image
+                  let headerImageUrl = "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/TOP_6___Grid_v1-vUeZjoixx1qfYf2Mba1yccHhfcAZWP.png";
+                  if (profileValue.backgroundImage) {
+                    const backgroundImages = profileValue.backgroundImage as Array<{url: string}> || [];
+                    if (backgroundImages.length > 0 && backgroundImages[0].url) {
+                      headerImageUrl = backgroundImages[0].url;
+                      console.log(`Found header image URL for ${address}: ${headerImageUrl}`);
+                    }
+                  }
+                  
+                  return {
+                    username: (profileValue.name as string) || address.substring(0, 6) + '...' + address.substring(address.length - 4),
+                    avatar: avatarUrl,
+                    hasData: hasValidData,
+                    headerImage: headerImageUrl,
+                    badges: ["badge"],
+                    description: (profileValue.description as string) || "No description available.",
+                    address
+                  };
+                } else {
+                  console.log(`No valid profile data found for ${address}. Using fallback.`);
+                  return {
+                    username: address.substring(0, 6) + '...' + address.substring(address.length - 4),
+                    avatar: "/placeholder.svg?height=48&width=48",
+                    hasData: false,
+                    headerImage: "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/TOP_6___Grid_v1-vUeZjoixx1qfYf2Mba1yccHhfcAZWP.png",
+                    badges: ["badge"],
+                    description: "No profile data available for this address.",
+                    address
+                  };
+                }
               } catch (decodingError) {
                 console.warn(`Decoding error for ${address}:`, decodingError);
                 // Check if it's the specific bytes decoding error we're experiencing
@@ -75,42 +142,52 @@ export default function Top6Page() {
                     // Try to get the name separately which might work
                     const nameData = await retrieveMetadataFromProfile(address, 'LSP3Profile:name');
                     if (nameData && nameData.value) {
-                      profileData = { 
-                        value: { 
-                          name: nameData.value,
-                          description: "Profile data partially recovered"
-                        } 
+                      return {
+                        username: nameData.value as string || address.substring(0, 6) + '...' + address.substring(address.length - 4),
+                        avatar: "/placeholder.svg?height=48&width=48",
+                        hasData: true,
+                        headerImage: "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/TOP_6___Grid_v1-vUeZjoixx1qfYf2Mba1yccHhfcAZWP.png",
+                        badges: ["badge"],
+                        description: "Profile data partially recovered. Some information may be missing.",
+                        address
                       };
-                      console.log(`Recovered partial profile for ${address}:`, profileData);
                     } else {
-                      profileData = { value: null };
+                      return {
+                        username: address.substring(0, 6) + '...' + address.substring(address.length - 4),
+                        avatar: "/placeholder.svg?height=48&width=48",
+                        hasData: false,
+                        headerImage: "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/TOP_6___Grid_v1-vUeZjoixx1qfYf2Mba1yccHhfcAZWP.png",
+                        badges: ["badge"],
+                        description: "Could not load profile data due to decoding error.",
+                        address
+                      };
                     }
                   } catch (recoveryError) {
                     console.error(`Recovery attempt failed for ${address}:`, recoveryError);
-                    profileData = { value: null };
+                    return {
+                      username: address.substring(0, 6) + '...' + address.substring(address.length - 4),
+                      avatar: "/placeholder.svg?height=48&width=48",
+                      hasData: false,
+                      headerImage: "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/TOP_6___Grid_v1-vUeZjoixx1qfYf2Mba1yccHhfcAZWP.png",
+                      badges: ["badge"],
+                      description: "Recovery failed. Could not load profile data.",
+                      address
+                    };
                   }
                 } else {
                   // For other errors, use default fallback
                   console.log(`Falling back to default profile for ${address} due to decoding error`);
-                  profileData = { value: null };
+                  return {
+                    username: address.substring(0, 6) + '...' + address.substring(address.length - 4),
+                    avatar: "/placeholder.svg?height=48&width=48",
+                    hasData: false,
+                    headerImage: "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/TOP_6___Grid_v1-vUeZjoixx1qfYf2Mba1yccHhfcAZWP.png",
+                    badges: ["badge"],
+                    description: "Could not load profile data due to an error.",
+                    address
+                  };
                 }
               }
-              
-              // Type assertion to access properties safely
-              const profileValue = profileData?.value as Record<string, unknown> || {};
-              
-              // Check if we actually have profile data despite potential decoding issues
-              const hasValidData = profileValue && Object.keys(profileValue).length > 0;
-              
-              return {
-                username: (profileValue.name as string) || address.substring(0, 6) + '...' + address.substring(address.length - 4),
-                avatar: ((profileValue.profileImage as Array<{url: string}>)?.[0]?.url) || "/placeholder.svg?height=48&width=48",
-                hasData: hasValidData,
-                headerImage: ((profileValue.backgroundImage as Array<{url: string}>)?.[0]?.url) || "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/TOP_6___Grid_v1-vUeZjoixx1qfYf2Mba1yccHhfcAZWP.png",
-                badges: ["badge"],
-                description: (profileValue.description as string) || "No description available.",
-                address
-              };
             } catch (error) {
               console.error(`Error fetching profile for ${address}:`, error);
               return {
@@ -149,6 +226,12 @@ export default function Top6Page() {
     };
 
     const fetchProfiles = async () => {
+      // If we've already fetched profiles, don't fetch again
+      if (fetchedRef.current) {
+        console.log('Profiles already fetched, skipping redundant fetch');
+        return;
+      }
+      
       // Always start with loading state
       setIsLoading(true);
       
@@ -175,34 +258,32 @@ export default function Top6Page() {
                 // Batch process profiles with rate limiting protection
                 const profilesData = await fetchProfilesWithRateLimiting(addresses.slice(0, 6));
                 setUsers(profilesData);
+                fetchedRef.current = true; // Mark as fetched
               } else {
-                // No addresses found
-                setUsers([
-                  {
-                    username: "No connections found",
-                    avatar: "/placeholder.svg?height=48&width=48",
-                    hasData: false,
-                    headerImage: "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/TOP_6___Grid_v1-vUeZjoixx1qfYf2Mba1yccHhfcAZWP.png",
-                    badges: ["badge"],
-                    description: "Add your top accounts to see them here.",
-                    address: ""
-                  }
-                ]);
-              }
-            } else {
-              console.log('No top accounts found or invalid data:', topAccountsData);
-              // If no connections found, use placeholder data
-              setUsers([
-                {
+                // No connections found, set a default message
+                setUsers([{
                   username: "No connections found",
                   avatar: "/placeholder.svg?height=48&width=48",
                   hasData: false,
                   headerImage: "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/TOP_6___Grid_v1-vUeZjoixx1qfYf2Mba1yccHhfcAZWP.png",
                   badges: ["badge"],
-                  description: "Add your top accounts to see them here.",
+                  description: "You don't have any connections yet.",
                   address: ""
-                }
-              ]);
+                }]);
+                fetchedRef.current = true; // Mark as fetched
+              }
+            } else {
+              // No connections data at all, set a default message
+              setUsers([{
+                username: "No Top6 list found",
+                avatar: "/placeholder.svg?height=48&width=48",
+                hasData: false,
+                headerImage: "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/TOP_6___Grid_v1-vUeZjoixx1qfYf2Mba1yccHhfcAZWP.png",
+                badges: ["badge"],
+                description: "You need to create a TOP6 list to see connections here.",
+                address: ""
+              }]);
+              fetchedRef.current = true; // Mark as fetched
             }
           } catch (error) {
             console.error('Error fetching top accounts:', error);
@@ -218,6 +299,7 @@ export default function Top6Page() {
                 address: ""
               }
             ]);
+            fetchedRef.current = true; // Mark as fetched even on error to avoid infinite retries
           }
         } else {
           // Not connected - use sample data
@@ -292,11 +374,15 @@ export default function Top6Page() {
             address: ""
           }
         ]);
+        fetchedRef.current = true; // Mark as fetched even on error to avoid infinite retries
       } finally {
         // Always set loading to false when done
         setIsLoading(false);
       }
     };
+    
+    // Store the fetchProfiles function in the ref
+    fetchProfilesRef.current = fetchProfiles;
     
     // Call the fetch function with a small delay to prevent rapid re-renders
     const timeoutId = setTimeout(() => {
@@ -310,7 +396,7 @@ export default function Top6Page() {
       clearTimeout(timeoutId);
       setIsLoading(false);
     };
-  }, [profileConnected, profileAddress, retrieveMetadataFromProfile, retrieveLSP3ProfileData]);
+  }, [profileConnected, profileAddress]);
 
   const handleCardClick = (cardId: string) => {
     // Find the user index that matches the clicked card
@@ -353,15 +439,6 @@ export default function Top6Page() {
       document.removeEventListener("mousedown", handleClickOutside)
     }
   }, [])
-
-  // Add a button to manually trigger data refresh
-  const refreshData = () => {
-    console.log('Manual refresh triggered');
-    setIsLoading(true);
-    // Force a re-evaluation of the useEffect by toggling a state
-    setIsConnected(prev => !prev);
-    setTimeout(() => setIsConnected(prev => !prev), 100);
-  };
 
   return (
     <div className="h-screen w-screen overflow-hidden bg-[#4a044e] text-white">
