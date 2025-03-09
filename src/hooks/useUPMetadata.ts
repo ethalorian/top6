@@ -260,6 +260,11 @@ export function useUPMetadata() {
         const schemaItem = selectedSchema.find(item => item.key === key || item.name === keyOrName);
         const valueType = schemaItem?.valueType || 'address[]'; // Default to address[] if schema not found
         
+        // Check for bytes type and add special warning
+        if (valueType === 'bytes') {
+          console.log('Attempting to decode bytes type, which may encounter decoding issues...');
+        }
+        
         // Decode using ethers ABI decoder which handles the correct format
         const decodedValue = decodeERC725YValue(rawResult, valueType);
         console.log('Successfully decoded value:', decodedValue);
@@ -272,6 +277,27 @@ export function useUPMetadata() {
         };
       } catch (decodeError) {
         console.error('Error decoding with ABI decoder:', decodeError);
+        
+        // Handle the specific bytes decoding error
+        const errorStr = String(decodeError);
+        if (errorStr.includes('invalid codepoint') || 
+            errorStr.includes('missing continuation byte') || 
+            errorStr.includes('Error decoding value with type bytes')) {
+          console.log('Encountered known bytes decoding issue, trying workarounds...');
+          
+          // For known problematic bytes data, try to extract IPFS URLs or other usable data
+          if (rawResult && rawResult.includes('ipfs://')) {
+            const ipfsMatch = rawResult.match(/ipfs:\/\/[A-Za-z0-9]+/);
+            if (ipfsMatch) {
+              console.log('Extracted IPFS URL from raw data:', ipfsMatch[0]);
+              return {
+                name: keyOrName,
+                key: key,
+                value: ipfsMatch[0]
+              };
+            }
+          }
+        }
         
         // As a fallback, try ERC725 decoder
         try {
@@ -369,7 +395,48 @@ export function useUPMetadata() {
     profileAddress: string,
     keyOrName: string
   ): Promise<DecodedMetadata> => {
-    return retrieveMetadataFromProfile(profileAddress, keyOrName, 'LSP3Profile');
+    try {
+      console.log(`Fetching LSP3 Profile data for ${profileAddress}, key: ${keyOrName}`);
+      const result = await retrieveMetadataFromProfile(profileAddress, keyOrName, 'LSP3Profile');
+      return result;
+    } catch (error) {
+      console.error(`Error retrieving LSP3 profile data for ${profileAddress}:`, error);
+      
+      // For LSP3Profile data, if the full profile retrieval fails,
+      // try to get individual properties that might work
+      if (keyOrName === 'LSP3Profile') {
+        try {
+          // Try to get just the name
+          console.log(`Attempting to fetch just the name for ${profileAddress}`);
+          const nameResult = await retrieveMetadataFromProfile(
+            profileAddress, 
+            'LSP3Profile:name', 
+            'LSP3Profile'
+          );
+          
+          // If we got a name, construct a minimal profile
+          if (nameResult && nameResult.value) {
+            return {
+              name: 'LSP3Profile',
+              key: getKeyByName('LSP3Profile', schemas.LSP3Profile) || '',
+              value: {
+                name: nameResult.value,
+                description: 'Partial profile data (only name available)'
+              }
+            };
+          }
+        } catch (nameError) {
+          console.error(`Failed to retrieve even the name for ${profileAddress}:`, nameError);
+        }
+      }
+      
+      // If all else fails, return a default object
+      return {
+        name: keyOrName,
+        key: getKeyByName(keyOrName, schemas.LSP3Profile) || keyOrName,
+        value: null
+      };
+    }
   };
   
   /**

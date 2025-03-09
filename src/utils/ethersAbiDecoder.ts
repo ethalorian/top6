@@ -153,10 +153,31 @@ export function decodeERC725YValue(data: string, valueType: string): string | st
       'uint256': 'uint256',
       'uint128': 'uint128',
       'bytes32': 'bytes32',
-      'bytes': 'string', // Changed to 'string' to match ethers ABI coder expectations
+      'bytes': 'bytes', // Changed from 'string' to 'bytes' to match proper type
       'string': 'string',
       'bool': 'bool'
     };
+    
+    // Special handling for bytes type 
+    if (valueType === 'bytes') {
+      try {
+        console.log('Decoding bytes type with proper bytes type, data:', data);
+        // Try decoding as bytes first
+        const bytesDecoded = ethers.utils.defaultAbiCoder.decode(['bytes'], data)[0];
+        return bytesDecoded;
+      } catch (bytesError) {
+        console.error('Error decoding as bytes, trying string fallback:', bytesError);
+        // Fallback to string decoding if bytes fails
+        try {
+          const stringDecoded = ethers.utils.defaultAbiCoder.decode(['string'], data)[0];
+          return stringDecoded;
+        } catch (stringError) {
+          console.error('Both bytes and string decoding failed:', stringError);
+          // If all decoding fails, return the raw data
+          return data;
+        }
+      }
+    }
     
     // Handle tuples
     if (valueType.startsWith('(') && valueType.endsWith(')')) {

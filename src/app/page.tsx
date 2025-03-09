@@ -64,9 +64,36 @@ export default function Top6Page() {
                 console.log(`LSP3 Profile for ${address}:`, profileData);
               } catch (decodingError) {
                 console.warn(`Decoding error for ${address}:`, decodingError);
-                // If it's the specific bytes decoding error, we'll still proceed with a null profile
-                console.log(`Falling back to default profile for ${address} due to decoding error`);
-                profileData = { value: null };
+                // Check if it's the specific bytes decoding error we're experiencing
+                const errorStr = String(decodingError);
+                if (errorStr.includes('invalid codepoint') || 
+                    errorStr.includes('missing continuation byte') || 
+                    errorStr.includes('Error decoding value with type bytes')) {
+                  console.log(`Known bytes decoding issue detected for ${address}, attempting recovery`);
+                  // Try a targeted approach to get basic profile info despite decoding error
+                  try {
+                    // Try to get the name separately which might work
+                    const nameData = await retrieveMetadataFromProfile(address, 'LSP3Profile:name');
+                    if (nameData && nameData.value) {
+                      profileData = { 
+                        value: { 
+                          name: nameData.value,
+                          description: "Profile data partially recovered"
+                        } 
+                      };
+                      console.log(`Recovered partial profile for ${address}:`, profileData);
+                    } else {
+                      profileData = { value: null };
+                    }
+                  } catch (recoveryError) {
+                    console.error(`Recovery attempt failed for ${address}:`, recoveryError);
+                    profileData = { value: null };
+                  }
+                } else {
+                  // For other errors, use default fallback
+                  console.log(`Falling back to default profile for ${address} due to decoding error`);
+                  profileData = { value: null };
+                }
               }
               
               // Type assertion to access properties safely
