@@ -23,6 +23,76 @@ type UserWithProfile = {
 const NO_PROFILE_IMAGE = "/top6-logo.svg";
 const DEFAULT_HEADER_IMAGE = "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/TOP_6___Grid_v1-vUeZjoixx1qfYf2Mba1yccHhfcAZWP.png";
 
+// Add a function to handle beforeunload events and prevent certain redirects
+function setupNavigationInterception(): (() => void) | undefined {
+  if (typeof window !== 'undefined') {
+    // Intercept beforeunload events
+    const beforeUnloadHandler = (event: BeforeUnloadEvent): void => {
+      // Check the URL we're navigating to using document.activeElement
+      const activeElement = document.activeElement as HTMLAnchorElement;
+      if (activeElement && activeElement.tagName === 'A' && activeElement.href) {
+        // If this is a link to universaleverything.io or lukso, prevent navigation
+        if (activeElement.href.includes('universaleverything.io') || 
+            activeElement.href.includes('lukso')) {
+          event.preventDefault();
+          console.log('Prevented navigation to external site:', activeElement.href);
+          // Cancel the event
+          event.returnValue = 'Navigation canceled';
+          // Stop propagation
+          event.stopPropagation();
+        }
+      }
+    };
+
+    window.addEventListener('beforeunload', beforeUnloadHandler);
+    
+    // Return a cleanup function
+    return () => {
+      window.removeEventListener('beforeunload', beforeUnloadHandler);
+    };
+  }
+  return undefined;
+}
+
+// Add a function to handle click events and prevent navigation to external sites
+function setupClickInterception(): (() => void) | undefined {
+  if (typeof window !== 'undefined') {
+    // Intercept all clicks
+    const clickHandler = (event: MouseEvent): void => {
+      // Check if the clicked element is a link
+      const targetElement = event.target as HTMLElement;
+      let linkElement: HTMLAnchorElement | null = null;
+      
+      // Try to find the closest anchor element
+      if (targetElement.tagName === 'A') {
+        linkElement = targetElement as HTMLAnchorElement;
+      } else {
+        linkElement = targetElement.closest('a') as HTMLAnchorElement;
+      }
+      
+      // If this is a link to universaleverything.io or lukso, prevent navigation
+      if (linkElement && linkElement.href) {
+        if (linkElement.href.includes('universaleverything.io') || 
+            linkElement.href.includes('lukso')) {
+          event.preventDefault();
+          console.log('Prevented click navigation to external site:', linkElement.href);
+          // Stop propagation
+          event.stopPropagation();
+        }
+      }
+    };
+
+    // Add the click event listener
+    document.addEventListener('click', clickHandler, true); // Use capture phase
+    
+    // Return a cleanup function
+    return () => {
+      document.removeEventListener('click', clickHandler, true);
+    };
+  }
+  return undefined;
+}
+
 export default function Top6Page() {
   const [showSearchPanel, setShowSearchPanel] = useState(false)
   const [selectedUser, setSelectedUser] = useState<number | null>(null)
@@ -69,10 +139,44 @@ export default function Top6Page() {
     }
     
     try {
-      const success = await connectProfile();
-      console.log(`Connection attempt ${success ? 'succeeded' : 'failed'}`);
+      // Capture the current URL in case we need to restore it
+      const currentUrl = window.location.href;
+      
+      // Set a flag to indicate we're in the middle of connecting
+      const isConnecting = true;
+      
+      // Show loading state while connecting
+      setIsLoading(true);
+      
+      // Add a one-time event listener to prevent any redirects during connection
+      const handleBeforeUnload = (event: BeforeUnloadEvent): void => {
+        if (isConnecting) {
+          event.preventDefault();
+          event.returnValue = 'Connection in progress';
+          console.log('Prevented navigation during connection');
+        }
+      };
+      
+      window.addEventListener('beforeunload', handleBeforeUnload);
+      
+      try {
+        // Attempt connection
+        const success = await connectProfile();
+        console.log(`Connection attempt ${success ? 'succeeded' : 'failed'}`);
+        
+        // Check if we were redirected
+        if (window.location.href !== currentUrl) {
+          console.log('Page was redirected during connection, returning to app');
+          window.history.replaceState(null, '', currentUrl);
+        }
+      } finally {
+        // Always clean up event listener and loading state
+        window.removeEventListener('beforeunload', handleBeforeUnload);
+        setIsLoading(false);
+      }
     } catch (error) {
       console.error('Error connecting to profile:', error);
+      setIsLoading(false);
     }
   };
 
@@ -477,6 +581,22 @@ export default function Top6Page() {
     };
   }, []); // We're excluding resetPopovers to prevent re-attaching the event listener on each render
   /* eslint-enable react-hooks/exhaustive-deps */
+
+  // Add an effect to prevent navigation away from the app
+  useEffect(() => {
+    console.log('Setting up navigation interception');
+    const cleanupBeforeUnload = setupNavigationInterception();
+    const cleanupClick = setupClickInterception();
+    
+    return () => {
+      if (typeof cleanupBeforeUnload === 'function') {
+        cleanupBeforeUnload();
+      }
+      if (typeof cleanupClick === 'function') {
+        cleanupClick();
+      }
+    };
+  }, []);
 
   return (
     <div className="h-screen w-screen overflow-hidden bg-[#4a044e] text-white">

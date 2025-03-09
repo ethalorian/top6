@@ -1,5 +1,17 @@
 'use client';
 
+// Patch the window.open function to prevent external redirects to universaleverything.io
+if (typeof window !== 'undefined') {
+  const originalOpen = window.open;
+  window.open = function(url?: string | URL, target?: string, features?: string): Window | null {
+    if (url && (url.toString().includes('universaleverything.io') || url.toString().includes('lukso'))) {
+      console.log('Prevented navigation to:', url);
+      return null;
+    }
+    return originalOpen.call(this, url, target, features);
+  };
+}
+
 import { createClientUPProvider } from '@lukso/up-provider';
 import { createContext, useCallback, useContext, useEffect, useState } from 'react';
 
@@ -31,6 +43,9 @@ export function UPProvider({ children }: { children: React.ReactNode }) {
   const connectProfile = useCallback(async (): Promise<boolean> => {
     if (!provider) return false;
     
+    // Capture the current location - we'll check if we've navigated away
+    const currentLocation = typeof window !== 'undefined' ? window.location.href : '';
+    
     try {
       console.log('Attempting to connect to Universal Profile...');
       
@@ -40,18 +55,64 @@ export function UPProvider({ children }: { children: React.ReactNode }) {
       
       if (_accounts.length === 0) {
         console.log('No accounts found, requesting accounts...');
-        // Try to request accounts - this might redirect to browser extension
-        try {
-          const _requestedAccounts = await provider.request({ 
-            method: 'eth_requestAccounts' 
-          }) as Array<`0x${string}`>;
+        
+        // Patch window.location temporarily to prevent redirects
+        if (typeof window !== 'undefined') {
+          const originalAssign = window.location.assign;
+          const originalReplace = window.location.replace;
           
-          setContextAccounts(_requestedAccounts);
-          setAccounts(_requestedAccounts);
-          updateConnected(_requestedAccounts, _requestedAccounts);
-          return _requestedAccounts.length > 0;
-        } catch (requestError) {
-          console.error('Failed to request accounts:', requestError);
+          window.location.assign = function(url: string | URL): void {
+            if (url.toString().includes('universaleverything.io') || url.toString().includes('lukso')) {
+              console.log('Prevented navigation to:', url);
+              return;
+            }
+            originalAssign.call(window.location, url);
+          };
+          
+          window.location.replace = function(url: string | URL): void {
+            if (url.toString().includes('universaleverything.io') || url.toString().includes('lukso')) {
+              console.log('Prevented navigation to:', url);
+              return;
+            }
+            originalReplace.call(window.location, url);
+          };
+          
+          try {
+            // Try to request accounts - this might redirect to browser extension
+            const _requestedAccounts = await Promise.race([
+              provider.request({ method: 'eth_requestAccounts' }) as Promise<Array<`0x${string}`>>,
+              // Add a timeout to avoid waiting forever
+              new Promise<Array<`0x${string}`>>((_, reject) => 
+                setTimeout(() => reject(new Error('Request timed out')), 3000)
+              )
+            ]);
+            
+            // Restore original functions
+            window.location.assign = originalAssign;
+            window.location.replace = originalReplace;
+            
+            setContextAccounts(_requestedAccounts);
+            setAccounts(_requestedAccounts);
+            updateConnected(_requestedAccounts, _requestedAccounts);
+            return _requestedAccounts.length > 0;
+          } catch (requestError) {
+            // Restore original functions
+            window.location.assign = originalAssign;
+            window.location.replace = originalReplace;
+            
+            console.error('Failed to request accounts:', requestError);
+            
+            // Check if we were redirected
+            if (typeof window !== 'undefined' && window.location.href !== currentLocation) {
+              console.error('Page was redirected during connection attempt');
+              // Try to go back to our app
+              window.history.back();
+            }
+            
+            return false;
+          }
+        } else {
+          // Server-side or non-window environment
           return false;
         }
       } else {
@@ -63,6 +124,14 @@ export function UPProvider({ children }: { children: React.ReactNode }) {
       }
     } catch (error) {
       console.error('Error connecting to Universal Profile:', error);
+      
+      // Check if we were redirected
+      if (typeof window !== 'undefined' && window.location.href !== currentLocation) {
+        console.error('Page was redirected during connection attempt');
+        // Try to go back to our app
+        window.history.back();
+      }
+      
       return false;
     }
   }, [provider, updateConnected]);
