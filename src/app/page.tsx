@@ -26,7 +26,7 @@ export default function Top6Page() {
   const popoverRef = useRef<HTMLDivElement>(null)
   const cardsContainerRef = useRef<HTMLDivElement>(null)
 
-  // Sample user data with some having profile data
+  // Sampl user data with some having profile data
   const users = [
     {
       username: "@USER#0000",
