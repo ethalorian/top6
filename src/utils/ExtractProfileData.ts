@@ -2,6 +2,7 @@ import { ERC725 } from '@erc725/erc725.js';
 import erc725schema from '@erc725/erc725.js/schemas/LSP3ProfileMetadata.json';
 import 'isomorphic-fetch';
 import { FetchDataOutput } from '@erc725/erc725.js/build/main/src/types/decodeData.js';
+import { top6Schema } from './GetDataKeys';
 
 // Static variables
 export const RPC_ENDPOINT = 'https://rpc.testnet.lukso.network';
@@ -29,6 +30,13 @@ export interface ProfilePictures {
   fullSizeBackgroundImg?: string;
   fullSizeProfileImg?: string;
 }
+
+// Top6 data interface
+export interface Top6Data {
+  addresses: string[];
+}
+
+export type AddressType = string;
 
 // Fetchable metadata information
 let name: string;
@@ -145,6 +153,32 @@ export async function fetchPictureData(address: string): Promise<ProfilePictures
   return pictures;
 }
 
+/**
+ * Decode data using the Top6 schema
+ * @param rawValue The raw encoded value from the contract
+ * @returns Array of decoded addresses
+ */
+export async function extractTop6Data(address: string): Promise<Top6Data> {
+  try {
+    // Create an ERC725 instance with the Top6 schema
+    const profile = new ERC725(top6Schema, address, RPC_ENDPOINT, config);
+    
+    // Fetch the Top6 data
+    const fetchedData = await profile.getData('Top6');
+    
+    // Return the decoded addresses
+    if (fetchedData && fetchedData.value) {
+      return { addresses: fetchedData.value as AddressType[] };
+    }
+    
+    return { addresses: [] };
+  } catch (error) {
+    console.error('Error extracting Top6 data:', error);
+    return { addresses: [] };
+  }
+}
+
 // Debug
 fetchProfileMetadata(SAMPLE_PROFILE_ADDRESS);
 fetchPictureData(SAMPLE_PROFILE_ADDRESS);
+// extractTop6Data(SAMPLE_PROFILE_ADDRESS);
