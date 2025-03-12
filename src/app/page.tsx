@@ -36,7 +36,7 @@ type UserWithProfile = {
   links?: ProfileLink[];
 }
 
-// Default profile data for empty slots
+// Defalt profile data for empty slots
 const DEFAULT_PROFILE = {
   username: "Click to Add Profile",
   avatar: "/placeholder.svg?height=48&width=48",
