@@ -1,5 +1,5 @@
 import { ERC725 } from '@erc725/erc725.js';
-// 💡 You can load the default schemas directly from @erc725.js
+// 💡 You can load th default schemas directly from @erc725.js
 // https://docs.lukso.tech/tools/erc725js/schemas
 import lsp3ProfileSchema from '@erc725/erc725.js/schemas/LSP3ProfileMetadata.json';
 
