@@ -91,6 +91,7 @@ export const fetchTop6Addresses = async (address: string): Promise<AddressType[]
         return result.value as AddressType[];
       } else {
         console.log('No Top6 data found for address:', address);
+        // This is a normal condition for new profiles, not an error
         return [];
       }
     } catch (innerError: unknown) {

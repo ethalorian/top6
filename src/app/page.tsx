@@ -35,7 +35,7 @@ type UserWithProfile = {
 
 // Default profile data for empty slots
 const DEFAULT_PROFILE = {
-  username: "Empty Slot",
+  username: "Click to Add Profile",
   avatar: "/placeholder.svg?height=48&width=48",
   hasData: false,
   address: ""
@@ -69,21 +69,23 @@ export default function Top6Page() {
     if (!profileConnected || accounts.length === 0) return;
     
     const currentAccount = accounts[0];
-    setIsLoading(true)
+    setIsLoading(true);
     try {
       // Get the Top6 addresses from the contract
-      const addresses = await fetchTop6Addresses(currentAccount)
+      console.log('Fetching Top6 addresses for account:', currentAccount);
+      const addresses = await fetchTop6Addresses(currentAccount);
       
       // Create an array to hold the user data
-      const userData: UserWithProfile[] = []
+      const userData: UserWithProfile[] = [];
       
       // If there are addresses, fetch their profile data
       if (addresses.length > 0) {
+        console.log(`Found ${addresses.length} Top6 addresses to fetch profiles for`);
         for (const addr of addresses) {
           try {
             // Fetch profile metadata for each address
-            const profileData = await fetchProfileMetadata(addr)
-            const pictureData = await fetchPictureData(addr)
+            const profileData = await fetchProfileMetadata(addr);
+            const pictureData = await fetchPictureData(addr);
             
             // Add user with profile data
             userData.push({
@@ -95,9 +97,9 @@ export default function Top6Page() {
               badges: profileData.tags || [],
               links: formatProfileLinks(profileData.links),
               address: addr
-            })
+            });
           } catch (error) {
-            console.error(`Error fetching profile for address ${addr}:`, error)
+            console.error(`Error fetching profile for address ${addr}:`, error);
             // Add user with minimal data if profile fetch fails
             userData.push({
               username: `${addr.substring(0, 6)}...${addr.substring(addr.length - 4)}`,
@@ -105,33 +107,35 @@ export default function Top6Page() {
               hasData: true,
               description: "No profile data available",
               address: addr
-            })
+            });
           }
         }
+      } else {
+        console.log('No Top6 addresses found, showing empty slots - this is normal for new profiles');
       }
       
       // Fill remaining slots up to 6
       while (userData.length < 6) {
-        userData.push({...DEFAULT_PROFILE})
+        userData.push({...DEFAULT_PROFILE});
       }
       
-      setUsers(userData)
+      setUsers(userData);
     } catch (error) {
-      console.error("Error fetching Top6 data:", error)
+      console.error("Error fetching Top6 data:", error);
       // If there's an error, create 6 empty slots
-      const emptySlots = Array(6).fill(0).map(() => ({...DEFAULT_PROFILE}))
-      setUsers(emptySlots)
+      const emptySlots = Array(6).fill(0).map(() => ({...DEFAULT_PROFILE}));
+      setUsers(emptySlots);
     } finally {
-      setIsLoading(false)
+      setIsLoading(false);
     }
-  }, [accounts, profileConnected])
+  }, [accounts, profileConnected]);
 
   // Fetch profile data when connected
   useEffect(() => {
     if (profileConnected && accounts.length > 0) {
       fetchTop6ProfileData();
-    } else {
-      // Reset users array and show loading when disconnected
+    } else if (!profileConnected) {
+      // Only reset users array when disconnected
       setUsers([]);
       setIsLoading(true);
     }
