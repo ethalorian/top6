@@ -1,15 +1,21 @@
 import Image from "next/image"
 import { Button } from "@/components/ui/button"
-import { UserPlus, ExternalLink } from "lucide-react"
+import { UserPlus, ExternalLink, Link as LinkIcon } from "lucide-react"
+
+interface ProfileLink {
+  title: string;
+  url: string;
+}
 
 interface ProfilePanelProps {
   user: {
-    username: string
-    avatar: string
-    headerImage?: string
-    badges?: string[]
-    description?: string
-    address: string
+    username: string;
+    avatar: string;
+    headerImage?: string;
+    badges?: string[];
+    description?: string;
+    address: string;
+    links?: ProfileLink[];
   }
 }
 
@@ -34,7 +40,7 @@ export function ProfilePanel({ user }: ProfilePanelProps) {
       </div>
 
       {/* Profile Content */}
-      <div className="p-[3%] flex-1 flex flex-col">
+      <div className="p-[3%] flex-1 flex flex-col overflow-auto">
         <div className="flex items-center gap-[3%] mb-[4%]">
           <div className="relative w-[15%] aspect-square">
             <Image
@@ -63,9 +69,30 @@ export function ProfilePanel({ user }: ProfilePanelProps) {
         
         {/* Description - improved text scaling */}
         {user.description && (
-          <p className="text-[#94a3b8] text-[clamp(0.8rem,1.5vw,1.1rem)] mb-auto leading-[1.5]">
+          <p className="text-[#94a3b8] text-[clamp(0.8rem,1.5vw,1.1rem)] mb-4 leading-[1.5]">
             {user.description}
           </p>
+        )}
+        
+        {/* Links Section */}
+        {user.links && user.links.length > 0 && (
+          <div className="mb-auto">
+            <h3 className="text-[#0f172a] font-medium text-[clamp(0.9rem,1.7vw,1.2rem)] mb-2">Links</h3>
+            <div className="space-y-2">
+              {user.links.map((link, index) => (
+                <a 
+                  key={index}
+                  href={link.url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center text-[#4a044e] text-[clamp(0.8rem,1.5vw,1.1rem)] hover:underline"
+                >
+                  <LinkIcon className="mr-2 h-4 w-4" />
+                  {link.title}
+                </a>
+              ))}
+            </div>
+          </div>
         )}
         
         {/* Action Buttons */}

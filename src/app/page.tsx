@@ -10,6 +10,12 @@ import { Button } from "@/components/ui/button"
 import { fetchTop6Addresses } from "@/utils/FetchProfileData"
 import { fetchProfileMetadata, fetchPictureData } from "@/utils/ExtractProfileData"
 import { encodeTop6Data } from "@/utils/EncodeERC725Data"
+import { useUPProvider } from "@/providers/up-provider"
+
+type ProfileLink = {
+  title: string;
+  url: string;
+}
 
 type UserWithProfile = {
   username: string;
@@ -19,6 +25,7 @@ type UserWithProfile = {
   badges?: string[];
   description?: string;
   address: string;
+  links?: ProfileLink[];
 }
 
 // Default profile data for empty slots
@@ -32,24 +39,35 @@ const DEFAULT_PROFILE = {
 export default function Top6Page() {
   const [showSearchPanel, setShowSearchPanel] = useState(false)
   const [selectedUser, setSelectedUser] = useState<number | null>(null)
-  const [isConnected, setIsConnected] = useState(false)
   const [selectedCardId, setSelectedCardId] = useState<string | null>(null)
   const [users, setUsers] = useState<UserWithProfile[]>([])
   const [isLoading, setIsLoading] = useState(true)
-  const [userAddress, setUserAddress] = useState<string | null>(null)
 
+  // Get Universal Profile context
+  const { accounts, contextAccounts, profileConnected, provider } = useUPProvider()
+  
   const popoverRef = useRef<HTMLDivElement>(null)
   const cardsContainerRef = useRef<HTMLDivElement>(null)
 
-  // Sample address for testing - should be replaced with connected wallet address
-  const SAMPLE_CONTRACT_ADDRESS = '0x9139def55c73c12bcda9c44f12326686e3948634'
+  // Format profile links from LSP3 data
+  const formatProfileLinks = (profileLinks: any[] | undefined): ProfileLink[] => {
+    if (!profileLinks || !Array.isArray(profileLinks)) return [];
+    
+    return profileLinks.map(link => ({
+      title: link.title || 'Link',
+      url: link.url || '#'
+    }));
+  }
 
   // Fetch Top6 addresses and their profile data
-  const fetchTop6ProfileData = async (address: string) => {
+  const fetchTop6ProfileData = async () => {
+    if (!profileConnected || accounts.length === 0) return;
+    
+    const currentAccount = accounts[0];
     setIsLoading(true)
     try {
       // Get the Top6 addresses from the contract
-      const addresses = await fetchTop6Addresses(address)
+      const addresses = await fetchTop6Addresses(currentAccount)
       
       // Create an array to hold the user data
       const userData: UserWithProfile[] = []
@@ -70,6 +88,7 @@ export default function Top6Page() {
               headerImage: pictureData.fullSizeBackgroundImg,
               description: profileData.description || "",
               badges: profileData.tags || [],
+              links: formatProfileLinks(profileData.links),
               address: addr
             })
           } catch (error) {
@@ -102,13 +121,16 @@ export default function Top6Page() {
     }
   }
 
-  // Connect wallet function (simplified for this example)
-  const connectWallet = async () => {
-    // This would be replaced with actual wallet connection logic
-    setUserAddress(SAMPLE_CONTRACT_ADDRESS)
-    setIsConnected(true)
-    await fetchTop6ProfileData(SAMPLE_CONTRACT_ADDRESS)
-  }
+  // Fetch profile data when connected
+  useEffect(() => {
+    if (profileConnected && accounts.length > 0) {
+      fetchTop6ProfileData();
+    } else {
+      // Reset users array and show loading when disconnected
+      setUsers([]);
+      setIsLoading(true);
+    }
+  }, [profileConnected, accounts]);
 
   const handleCardClick = (cardId: string, index: number) => {
     if (selectedCardId === cardId) {
@@ -136,7 +158,7 @@ export default function Top6Page() {
 
   // Handle address selection from search panel
   const handleAddressSelected = async (address: string) => {
-    if (!userAddress || !selectedCardId) return
+    if (!profileConnected || accounts.length === 0 || !selectedCardId) return
     
     // Extract index from selected card id
     const index = parseInt(selectedCardId.replace('@', ''), 10);
@@ -157,6 +179,7 @@ export default function Top6Page() {
         headerImage: pictureData.fullSizeBackgroundImg,
         description: profileData.description || "",
         badges: profileData.tags || [],
+        links: formatProfileLinks(profileData.links),
         address: address
       }
       
@@ -169,7 +192,17 @@ export default function Top6Page() {
       const encodedData = encodeTop6Data(addresses)
       console.log("Encoded data for saving to contract:", encodedData)
       
-      // Here you would send the transaction to update the contract
+      // Here you would send the transaction to update the contract using the provider
+      // This is a placeholder for the actual transaction code
+      // const tx = await provider.request({
+      //   method: 'eth_sendTransaction',
+      //   params: [{
+      //     from: accounts[0],
+      //     to: accounts[0], // Contract address would go here
+      //     data: encodedData.values[0], // The encoded function call
+      //   }]
+      // });
+      
       // For now, just update the UI
       setUsers(updatedUsers)
       resetPopovers()
@@ -178,6 +211,16 @@ export default function Top6Page() {
       console.error("Error updating address:", error)
     }
   }
+
+  // Connect to the UP wallet
+  const connectWallet = async () => {
+    try {
+      // This will trigger the wallet connection
+      await provider.request({ method: 'eth_requestAccounts' });
+    } catch (error) {
+      console.error("Error connecting wallet:", error);
+    }
+  };
 
   // Handle clicks outside of cards and popovers
   useEffect(() => {
@@ -206,10 +249,15 @@ export default function Top6Page() {
           <Button
             variant="link"
             className="text-white p-0 flex items-center gap-[2%] text-[clamp(0.7rem,1.5vw,1rem)] font-light"
-            onClick={isConnected ? resetPopovers : connectWallet}
+            onClick={profileConnected ? resetPopovers : connectWallet}
           >
             <ChevronLeft className="w-[clamp(1.5rem,3vw,3rem)] h-[clamp(1.5rem,3vw,3rem)]" />
-            <span>{isConnected ? "Connected" : "Click to Connect"}</span>
+            <span>
+              {profileConnected 
+                ? `Connected: ${accounts[0].substring(0, 6)}...${accounts[0].substring(accounts[0].length - 4)}`
+                : "Click to Connect"
+              }
+            </span>
           </Button>
         </div>
         <div className="flex-1 px-[0.67%] overflow-hidden">
@@ -217,7 +265,18 @@ export default function Top6Page() {
             <div className="h-full flex">
               <div className="h-full w-1/2 flex py-[3%] px-[1.5%] relative" ref={popoverRef}>
                 <div className="h-full flex flex-col w-full">
-                  {isLoading ? (
+                  {!profileConnected ? (
+                    <div className="bg-white rounded-sm h-full flex flex-col justify-center items-center w-full p-8 text-center">
+                      <h2 className="text-[#0f172a] text-2xl font-medium mb-4">Connect Your Profile</h2>
+                      <p className="text-[#64748b] text-lg mb-8">Connect your Universal Profile to view and manage your Top 6.</p>
+                      <Button 
+                        className="bg-[#4a044e] hover:bg-[#3a033e] text-white rounded-sm h-12 px-8 text-lg"
+                        onClick={connectWallet}
+                      >
+                        Connect
+                      </Button>
+                    </div>
+                  ) : isLoading ? (
                     <div className="bg-white rounded-sm h-full flex flex-col justify-center items-center w-full p-8 text-center">
                       <p className="text-[#64748b] text-lg">Loading profiles...</p>
                     </div>
@@ -252,7 +311,16 @@ export default function Top6Page() {
                 ref={cardsContainerRef}
               >
                 <div className="flex-1 flex flex-col justify-between gap-[2%]">
-                  {isLoading ? (
+                  {!profileConnected ? (
+                    // Display connect message placeholders
+                    Array(6).fill(0).map((_, index) => (
+                      <div key={index} className="relative flex-grow py-0">
+                        <div className="bg-gray-700 opacity-50 h-16 w-full rounded-sm flex items-center justify-center text-white/70">
+                          Connect to view profiles
+                        </div>
+                      </div>
+                    ))
+                  ) : isLoading ? (
                     // Display loading placeholders
                     Array(6).fill(0).map((_, index) => (
                       <div key={index} className="relative flex-grow py-0">
