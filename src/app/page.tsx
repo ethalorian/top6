@@ -12,6 +12,8 @@ import { fetchProfileMetadata, fetchPictureData } from "@/utils/ExtractProfileDa
 import { encodeTop6Data } from "@/utils/EncodeERC725Data"
 import { useUPProvider } from "@/providers/up-provider"
 import { createClientUPProvider } from "@/providers/up-provider"
+import { top6Schema } from "@/utils/GetDataKeys"
+import { ethers } from "ethers"
 
 type ProfileLink = {
   title: string;
@@ -41,6 +43,31 @@ const DEFAULT_PROFILE = {
   hasData: false,
   address: ""
 }
+
+// Add UniversalProfile ABI (minimal, just what we need)
+const UP_ABI = [
+  {
+    "inputs": [
+      {
+        "internalType": "bytes32",
+        "name": "dataKey",
+        "type": "bytes32"
+      },
+      {
+        "internalType": "bytes",
+        "name": "dataValue",
+        "type": "bytes"
+      }
+    ],
+    "name": "setData",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  }
+];
+
+// Top6 data key from schema
+const TOP6_DATA_KEY = top6Schema[0].key;
 
 export default function Top6Page() {
   const [showSearchPanel, setShowSearchPanel] = useState(false)
@@ -229,6 +256,12 @@ export default function Top6Page() {
       const encodedData = encodeTop6Data(addresses);
       console.log("Encoded data for saving to contract:", encodedData);
       
+      // Create ethers interface for encoding function call
+      const iface = new ethers.utils.Interface(UP_ABI);
+      const calldata = iface.encodeFunctionData("setData", [TOP6_DATA_KEY, encodedData.values[0]]);
+      
+      console.log("Generated calldata for setData:", calldata);
+      
       // Set loading state to indicate transaction in progress
       setIsLoading(true);
       
@@ -238,8 +271,8 @@ export default function Top6Page() {
           method: 'eth_sendTransaction',
           params: [{
             from: accounts[0],
-            to: accounts[0], // The Universal Profile is both the sender and receiver for data updates
-            data: encodedData.values[0], // The encoded function call
+            to: accounts[0], // The Universal Profile contract address
+            data: calldata, // Properly encoded function call to setData
           }]
         });
         
