@@ -47,8 +47,7 @@ export function ProfilePanel({ user }: ProfilePanelProps) {
           className="object-cover"
           onError={(e) => {
             console.error("Error loading header image:", user.headerImage);
-            // @ts-ignore - Setting src on error is a common pattern
-            e.currentTarget.src = defaultHeaderImage;
+            (e.currentTarget as HTMLImageElement).src = defaultHeaderImage;
           }}
         />
       </div>
@@ -64,8 +63,7 @@ export function ProfilePanel({ user }: ProfilePanelProps) {
               className="rounded-full object-cover"
               onError={(e) => {
                 console.error("Error loading avatar image:", user.avatar);
-                // @ts-ignore - Setting src on error is a common pattern
-                e.currentTarget.src = "/placeholder.svg";
+                (e.currentTarget as HTMLImageElement).src = "/placeholder.svg";
               }}
             />
           </div>
