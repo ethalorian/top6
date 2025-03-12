@@ -3,7 +3,7 @@ import lsp3ProfileSchema from '@erc725/erc725.js/schemas/LSP3ProfileMetadata.jso
 import { top6Schema } from './GetDataKeys';
 
 export const SAMPLE_UP_ADDRESS = '0xEda145b45f76EDB44F112B0d46654044E7B8F319';
-export const RPC_ENDPOINT = 'https://rpc.testnet.lukso.network';
+export const RPC_ENDPOINT = 'https://rpc.lukso.sigmacore.io';
 export const IPFS_GATEWAY = 'https://api.universalprofile.cloud/ipfs';
 
 export type AddressType = string;
@@ -70,20 +70,41 @@ export const fetchUniversalReceiver = async (address: string) => {
  */
 export const fetchTop6Addresses = async (address: string): Promise<AddressType[]> => {
   try {
+    // Check if address is valid
+    if (!address || !address.startsWith('0x')) {
+      console.error('Invalid address format:', address);
+      return [];
+    }
+
+    console.log(`Attempting to fetch Top6 data from address: ${address}`);
+    
     // Create a new ERC725 instance with the given address and Top6 schema
     const contractInstance = createTop6ERC725Instance(address);
     
-    // Fetch the Top6 data from the contract
-    const result = await contractInstance.getData('Top6');
-    
-    // If the result is valid, return the addresses
-    if (result && result.value) {
-      return result.value as AddressType[];
+    try {
+      // Try to fetch the Top6 data from the contract
+      const result = await contractInstance.getData('Top6');
+      
+      // If the result is valid, return the addresses
+      if (result && result.value) {
+        console.log('Successfully fetched Top6 addresses:', result.value);
+        return result.value as AddressType[];
+      } else {
+        console.log('No Top6 data found for address:', address);
+        return [];
+      }
+    } catch (innerError: any) {
+      // Handle specific error for ERC725Y interface issues
+      if (innerError.message && innerError.message.includes('does not support ERC725Y interface')) {
+        console.warn(`Contract ${address} does not support the ERC725Y interface. This is normal if it's not a Universal Profile contract.`);
+      }
+      
+      // Log the error for debugging but return empty array to avoid breaking the UI
+      console.error('Error fetching Top6 addresses:', innerError);
+      return [];
     }
-    
-    return [];
   } catch (error) {
-    console.error('Error fetching Top6 addresses:', error);
+    console.error('Unexpected error in fetchTop6Addresses:', error);
     return [];
   }
 };

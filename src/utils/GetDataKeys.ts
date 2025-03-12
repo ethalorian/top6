@@ -5,7 +5,7 @@ import lsp3ProfileSchema from '@erc725/erc725.js/schemas/LSP3ProfileMetadata.jso
 import { ERC725JSONSchema } from '@erc725/erc725.js';
 
 export const SAMPLE_UP_ADDRESS = '0x9139def55c73c12bcda9c44f12326686e3948634';
-export const RPC_ENDPOINT = 'https://rpc.testnet.lukso.network';
+export const RPC_ENDPOINT = 'https://rpc.lukso.sigmacore.io';
 export const IPFS_GATEWAY = 'https://api.universalprofile.cloud/ipfs';
 
 // Top6 schema definition

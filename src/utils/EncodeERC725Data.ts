@@ -2,7 +2,7 @@ import { ERC725 } from '@erc725/erc725.js';
 import { top6Schema } from './GetDataKeys';
 
 export type AddressType = string;
-export const RPC_ENDPOINT = 'https://rpc.testnet.lukso.network';
+export const RPC_ENDPOINT = 'https://rpc.lukso.sigmacore.io';
 
 /**
  * Create an ERC725 instance with the Top6 schema

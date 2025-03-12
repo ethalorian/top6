@@ -163,18 +163,18 @@ export default function Top6Page() {
 
   // Handle address selection from search panel
   const handleAddressSelected = async (address: string) => {
-    if (!profileConnected || accounts.length === 0 || !selectedCardId) return
+    if (!profileConnected || accounts.length === 0 || !selectedCardId) return;
     
     // Extract index from selected card id
     const index = parseInt(selectedCardId.replace('@', ''), 10);
     
     // Create a copy of the current users array
-    const updatedUsers = [...users]
+    const updatedUsers = [...users];
     
     try {
       // Fetch profile data for the selected address
-      const profileData = await fetchProfileMetadata(address)
-      const pictureData = await fetchPictureData(address)
+      const profileData = await fetchProfileMetadata(address);
+      const pictureData = await fetchPictureData(address);
       
       // Update the user at the specified index
       updatedUsers[index] = {
@@ -186,16 +186,16 @@ export default function Top6Page() {
         badges: profileData.tags || [],
         links: formatProfileLinks(profileData.links),
         address: address
-      }
+      };
       
       // Extract just the addresses for encoding
       const addresses = updatedUsers
         .filter(user => user.hasData && user.address)
-        .map(user => user.address)
+        .map(user => user.address);
       
       // Encode the updated address list to be saved to the contract
-      const encodedData = encodeTop6Data(addresses)
-      console.log("Encoded data for saving to contract:", encodedData)
+      const encodedData = encodeTop6Data(addresses);
+      console.log("Encoded data for saving to contract:", encodedData);
       
       // Here you would send the transaction to update the contract using the provider
       // This is a placeholder for the actual transaction code
@@ -209,13 +209,13 @@ export default function Top6Page() {
       // });
       
       // For now, just update the UI
-      setUsers(updatedUsers)
-      resetPopovers()
+      setUsers(updatedUsers);
+      resetPopovers();
       
     } catch (error) {
-      console.error("Error updating address:", error)
+      console.error("Error updating address:", error);
     }
-  }
+  };
 
   // Connect to the UP wallet
   const connectWallet = async () => {

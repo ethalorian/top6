@@ -5,7 +5,7 @@ import { FetchDataOutput } from '@erc725/erc725.js/build/main/src/types/decodeDa
 import { top6Schema } from './GetDataKeys';
 
 // Static variables
-export const RPC_ENDPOINT = 'https://rpc.testnet.lukso.network';
+export const RPC_ENDPOINT = 'https://rpc.lukso.sigmacore.io';
 export const IPFS_GATEWAY = 'https://api.universalprofile.cloud/ipfs';
 export const SAMPLE_PROFILE_ADDRESS = '0x9139def55c73c12bcda9c44f12326686e3948634';
 
