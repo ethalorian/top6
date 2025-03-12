@@ -7,14 +7,26 @@ import { ContentPanel } from "@/components/ContentPanel"
 import { ProfilePanel } from "@/components/ProfilePanel"
 import { ChevronLeft } from "lucide-react"
 import { Button } from "@/components/ui/button"
+import { fetchTop6Addresses } from "@/utils/FetchProfileData"
+import { fetchProfileMetadata, fetchPictureData } from "@/utils/ExtractProfileData"
+import { encodeTop6Data } from "@/utils/EncodeERC725Data"
 
 type UserWithProfile = {
   username: string;
   avatar: string;
   hasData: boolean;
-  headerImage: string;
-  badges: string[];
-  description: string;
+  headerImage?: string;
+  badges?: string[];
+  description?: string;
+  address: string;
+}
+
+// Default profile data for empty slots
+const DEFAULT_PROFILE = {
+  username: "Empty Slot",
+  avatar: "/placeholder.svg?height=48&width=48",
+  hasData: false,
+  address: ""
 }
 
 export default function Top6Page() {
@@ -22,79 +34,149 @@ export default function Top6Page() {
   const [selectedUser, setSelectedUser] = useState<number | null>(null)
   const [isConnected, setIsConnected] = useState(false)
   const [selectedCardId, setSelectedCardId] = useState<string | null>(null)
+  const [users, setUsers] = useState<UserWithProfile[]>([])
+  const [isLoading, setIsLoading] = useState(true)
+  const [userAddress, setUserAddress] = useState<string | null>(null)
 
   const popoverRef = useRef<HTMLDivElement>(null)
   const cardsContainerRef = useRef<HTMLDivElement>(null)
 
-  // Sample user data with some having profile data
-  const users = [
-    {
-      username: "@USER#0000",
-      avatar: "/placeholder.svg?height=48&width=48",
-      hasData: true,
-      headerImage:
-        "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/TOP_6___Grid_v1-vUeZjoixx1qfYf2Mba1yccHhfcAZWP.png",
-      badges: ["badge", "badge", "badge"],
-      description:
-        "Lorem ipsum odor amet, consectetuer adipiscing elit. Habitant praesent facilisi vivamus, consequat eleifend etiam eget curabitur.",
-    },
-    {
-      username: "@USER#0001",
-      avatar: "/placeholder.svg?height=48&width=48",
-      hasData: true,
-      headerImage:
-        "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/TOP_6___Grid_v1-vUeZjoixx1qfYf2Mba1yccHhfcAZWP.png",
-      badges: ["badge", "badge"],
-      description:
-        "Habitant praesent facilisi vivamus, consequat eleifend etiam eget curabitur. Lorem ipsum odor amet, consectetuer adipiscing elit.",
-    },
-    {
-      username: "@USER#0002",
-      avatar: "/placeholder.svg?height=48&width=48",
-      hasData: true,
-      headerImage:
-        "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/TOP_6___Grid_v1-vUeZjoixx1qfYf2Mba1yccHhfcAZWP.png",
-      badges: ["badge"],
-      description:
-        "Consequat eleifend etiam eget curabitur. Lorem ipsum odor amet, consectetuer adipiscing elit. Habitant praesent facilisi vivamus.",
-    },
-    {
-      username: "@USER#0003",
-      avatar: "/placeholder.svg?height=48&width=48",
-      hasData: false,
-    },
-    {
-      username: "@USER#0004",
-      avatar: "/placeholder.svg?height=48&width=48",
-      hasData: false,
-    },
-    {
-      username: "@USER#0005",
-      avatar: "/placeholder.svg?height=48&width=48",
-      hasData: false,
-    },
-  ]
+  // Sample address for testing - should be replaced with connected wallet address
+  const SAMPLE_CONTRACT_ADDRESS = '0x9139def55c73c12bcda9c44f12326686e3948634'
 
-  const handleCardClick = (cardId: string) => {
-    // Find the user index that matches the clicked card
-    const userIndex = users.findIndex(user => user.username === cardId);
-    
+  // Fetch Top6 addresses and their profile data
+  const fetchTop6ProfileData = async (address: string) => {
+    setIsLoading(true)
+    try {
+      // Get the Top6 addresses from the contract
+      const addresses = await fetchTop6Addresses(address)
+      
+      // Create an array to hold the user data
+      const userData: UserWithProfile[] = []
+      
+      // If there are addresses, fetch their profile data
+      if (addresses.length > 0) {
+        for (const addr of addresses) {
+          try {
+            // Fetch profile metadata for each address
+            const profileData = await fetchProfileMetadata(addr)
+            const pictureData = await fetchPictureData(addr)
+            
+            // Add user with profile data
+            userData.push({
+              username: profileData.name || `${addr.substring(0, 6)}...${addr.substring(addr.length - 4)}`,
+              avatar: pictureData.fullSizeProfileImg || "/placeholder.svg?height=48&width=48",
+              hasData: true,
+              headerImage: pictureData.fullSizeBackgroundImg,
+              description: profileData.description || "",
+              badges: profileData.tags || [],
+              address: addr
+            })
+          } catch (error) {
+            console.error(`Error fetching profile for address ${addr}:`, error)
+            // Add user with minimal data if profile fetch fails
+            userData.push({
+              username: `${addr.substring(0, 6)}...${addr.substring(addr.length - 4)}`,
+              avatar: "/placeholder.svg?height=48&width=48",
+              hasData: true,
+              description: "No profile data available",
+              address: addr
+            })
+          }
+        }
+      }
+      
+      // Fill remaining slots up to 6
+      while (userData.length < 6) {
+        userData.push({...DEFAULT_PROFILE})
+      }
+      
+      setUsers(userData)
+    } catch (error) {
+      console.error("Error fetching Top6 data:", error)
+      // If there's an error, create 6 empty slots
+      const emptySlots = Array(6).fill(0).map(() => ({...DEFAULT_PROFILE}))
+      setUsers(emptySlots)
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
+  // Connect wallet function (simplified for this example)
+  const connectWallet = async () => {
+    // This would be replaced with actual wallet connection logic
+    setUserAddress(SAMPLE_CONTRACT_ADDRESS)
+    setIsConnected(true)
+    await fetchTop6ProfileData(SAMPLE_CONTRACT_ADDRESS)
+  }
+
+  const handleCardClick = (cardId: string, index: number) => {
     if (selectedCardId === cardId) {
       // Clicking the same card again - close everything
-      setSelectedCardId(null);
-      setSelectedUser(null);
-      setShowSearchPanel(false);
+      setSelectedCardId(null)
+      setSelectedUser(null)
+      setShowSearchPanel(false)
+    } else if (!users[index].hasData) {
+      // Clicking an empty card - show search panel
+      setSelectedCardId(cardId)
+      setSelectedUser(null)
+      setShowSearchPanel(true)
     } else {
-      // Clicking a different card
-      setSelectedCardId(cardId);
-      setSelectedUser(userIndex >= 0 ? userIndex : null);
-      setShowSearchPanel(false); // Don't show search panel, show profile instead
+      // Clicking a card with data - show profile
+      setSelectedCardId(cardId)
+      setSelectedUser(index)
+      setShowSearchPanel(false)
     }
   }
 
   const resetPopovers = () => {
     setSelectedCardId(null)
     setShowSearchPanel(false)
+  }
+
+  // Handle address selection from search panel
+  const handleAddressSelected = async (address: string) => {
+    if (!userAddress || !selectedCardId) return
+    
+    // Extract index from selected card id
+    const index = parseInt(selectedCardId.replace('@', ''), 10);
+    
+    // Create a copy of the current users array
+    const updatedUsers = [...users]
+    
+    try {
+      // Fetch profile data for the selected address
+      const profileData = await fetchProfileMetadata(address)
+      const pictureData = await fetchPictureData(address)
+      
+      // Update the user at the specified index
+      updatedUsers[index] = {
+        username: profileData.name || `${address.substring(0, 6)}...${address.substring(address.length - 4)}`,
+        avatar: pictureData.fullSizeProfileImg || "/placeholder.svg?height=48&width=48",
+        hasData: true,
+        headerImage: pictureData.fullSizeBackgroundImg,
+        description: profileData.description || "",
+        badges: profileData.tags || [],
+        address: address
+      }
+      
+      // Extract just the addresses for encoding
+      const addresses = updatedUsers
+        .filter(user => user.hasData && user.address)
+        .map(user => user.address)
+      
+      // Encode the updated address list to be saved to the contract
+      const encodedData = encodeTop6Data(addresses)
+      console.log("Encoded data for saving to contract:", encodedData)
+      
+      // Here you would send the transaction to update the contract
+      // For now, just update the UI
+      setUsers(updatedUsers)
+      resetPopovers()
+      
+    } catch (error) {
+      console.error("Error updating address:", error)
+    }
   }
 
   // Handle clicks outside of cards and popovers
@@ -124,7 +206,7 @@ export default function Top6Page() {
           <Button
             variant="link"
             className="text-white p-0 flex items-center gap-[2%] text-[clamp(0.7rem,1.5vw,1rem)] font-light"
-            onClick={() => setIsConnected(!isConnected)}
+            onClick={isConnected ? resetPopovers : connectWallet}
           >
             <ChevronLeft className="w-[clamp(1.5rem,3vw,3rem)] h-[clamp(1.5rem,3vw,3rem)]" />
             <span>{isConnected ? "Connected" : "Click to Connect"}</span>
@@ -135,20 +217,30 @@ export default function Top6Page() {
             <div className="h-full flex">
               <div className="h-full w-1/2 flex py-[3%] px-[1.5%] relative" ref={popoverRef}>
                 <div className="h-full flex flex-col w-full">
-                  {selectedUser !== null ? (
+                  {isLoading ? (
+                    <div className="bg-white rounded-sm h-full flex flex-col justify-center items-center w-full p-8 text-center">
+                      <p className="text-[#64748b] text-lg">Loading profiles...</p>
+                    </div>
+                  ) : selectedUser !== null ? (
                     users[selectedUser].hasData ? (
-                      <ProfilePanel user={users[selectedUser] as UserWithProfile} />
+                      <ProfilePanel user={users[selectedUser]} />
                     ) : (
                       <div className="bg-white rounded-sm h-full flex flex-col justify-center items-center w-full p-8 text-center">
-                        <h2 className="text-[#0f172a] text-2xl font-medium mb-4">No Profile Data</h2>
-                        <p className="text-[#64748b] text-lg mb-8">This user doesn&apos;t have a profile yet.</p>
-                        <Button className="bg-[#4a044e] hover:bg-[#3a033e] text-white rounded-sm h-12 px-8 text-lg">
+                        <h2 className="text-[#0f172a] text-2xl font-medium mb-4">Empty Slot</h2>
+                        <p className="text-[#64748b] text-lg mb-8">You can add a profile to this slot.</p>
+                        <Button 
+                          className="bg-[#4a044e] hover:bg-[#3a033e] text-white rounded-sm h-12 px-8 text-lg"
+                          onClick={() => setShowSearchPanel(true)}
+                        >
                           Add Profile
                         </Button>
                       </div>
                     )
                   ) : showSearchPanel ? (
-                    <SearchPanel onCancel={resetPopovers} />
+                    <SearchPanel 
+                      onCancel={resetPopovers} 
+                      onAddressSelected={handleAddressSelected} 
+                    />
                   ) : (
                     <ContentPanel />
                   )}
@@ -160,22 +252,31 @@ export default function Top6Page() {
                 ref={cardsContainerRef}
               >
                 <div className="flex-1 flex flex-col justify-between gap-[2%]">
-                  {users.map((user, index) => (
-                    <div key={index} className="relative flex-grow py-0">
-                      <UserCard
-                        username={user.username}
-                        avatar={user.avatar}
-                        hasData={user.hasData}
-                        isSelected={selectedCardId === user.username}
-                        onClick={() => handleCardClick(user.username)}
-                        className={`text-[clamp(0.65rem,1.4vw,0.9rem)] flex flex-row items-center
-                          ${selectedCardId === user.username ? 
-                            "-ml-[clamp(0.5rem,3vw,3.5rem)] transition-all duration-300" : 
-                            "transition-all duration-300"
-                          }`}
-                      />
-                    </div>
-                  ))}
+                  {isLoading ? (
+                    // Display loading placeholders
+                    Array(6).fill(0).map((_, index) => (
+                      <div key={index} className="relative flex-grow py-0">
+                        <div className="bg-gray-700 animate-pulse h-16 w-full rounded-sm"></div>
+                      </div>
+                    ))
+                  ) : (
+                    users.map((user, index) => (
+                      <div key={index} className="relative flex-grow py-0">
+                        <UserCard
+                          username={user.username}
+                          avatar={user.avatar}
+                          hasData={user.hasData}
+                          isSelected={selectedCardId === `@${index}`}
+                          onClick={() => handleCardClick(`@${index}`, index)}
+                          className={`text-[clamp(0.65rem,1.4vw,0.9rem)] flex flex-row items-center
+                            ${selectedCardId === `@${index}` ? 
+                              "-ml-[clamp(0.5rem,3vw,3.5rem)] transition-all duration-300" : 
+                              "transition-all duration-300"
+                            }`}
+                        />
+                      </div>
+                    ))
+                  )}
                 </div>
               </div>
             </div>

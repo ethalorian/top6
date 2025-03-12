@@ -1,16 +1,70 @@
 "use client"
 
+import { useState } from "react"
 import Image from "next/image"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { isAddress } from "@ethersproject/address"
 
-// Add props interface with onCancel function
+// Add props interface with onCancel function and onAddressSelected
 interface SearchPanelProps {
   onCancel?: () => void;
+  onAddressSelected?: (address: string) => void;
 }
 
-export function SearchPanel({ onCancel }: SearchPanelProps) {
+export function SearchPanel({ onCancel, onAddressSelected }: SearchPanelProps) {
+  const [address, setAddress] = useState<string>("")
+  const [isValidAddress, setIsValidAddress] = useState<boolean>(false)
+  const [isLoading, setIsLoading] = useState<boolean>(false)
+  const [error, setError] = useState<string | null>(null)
+
+  // Validate Ethereum address format
+  const validateAddress = (value: string) => {
+    try {
+      const valid = isAddress(value)
+      setIsValidAddress(valid)
+      setError(valid ? null : "Please enter a valid Ethereum address")
+      return valid
+    } catch (e) {
+      setIsValidAddress(false)
+      setError("Please enter a valid Ethereum address")
+      return false
+    }
+  }
+
+  const handleAddressChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value
+    setAddress(value)
+    if (value.length > 0) {
+      validateAddress(value)
+    } else {
+      setIsValidAddress(false)
+      setError(null)
+    }
+  }
+
+  const handleAddAddress = async () => {
+    if (!validateAddress(address) || !onAddressSelected) return
+    
+    try {
+      setIsLoading(true)
+      setError(null)
+      
+      // Call the parent component's selection handler
+      onAddressSelected(address)
+      
+      // Reset the form
+      setAddress("")
+      setIsValidAddress(false)
+    } catch (error) {
+      console.error("Error adding address:", error)
+      setError("Failed to add address. Please try again.")
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
   return (
     <div className="bg-white rounded-sm h-full flex flex-col w-full overflow-hidden">
       {/* Logo Section */}
@@ -53,8 +107,11 @@ export function SearchPanel({ onCancel }: SearchPanelProps) {
             </h3>
             <Input 
               placeholder="0×01234..." 
-              className="bg-white border-[#e2e8f0] h-12 text-base rounded-lg" 
+              className={`bg-white border-[#e2e8f0] h-12 text-base rounded-lg ${error ? 'border-red-500' : ''}`}
+              value={address}
+              onChange={handleAddressChange}
             />
+            {error && <p className="text-red-500 text-sm mt-1">{error}</p>}
           </div>
         </div>
         
@@ -67,8 +124,12 @@ export function SearchPanel({ onCancel }: SearchPanelProps) {
           >
             Cancel
           </Button>
-          <Button className="bg-[#4a044e] hover:bg-[#3a033e] text-white rounded-lg h-12 px-8 text-lg w-[120px]">
-            Add
+          <Button 
+            className="bg-[#4a044e] hover:bg-[#3a033e] text-white rounded-lg h-12 px-8 text-lg w-[120px]"
+            onClick={handleAddAddress}
+            disabled={!isValidAddress || isLoading}
+          >
+            {isLoading ? "Loading..." : "Add"}
           </Button>
         </div>
       </div>
