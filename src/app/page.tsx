@@ -11,6 +11,7 @@ import { fetchTop6Addresses } from "@/utils/FetchProfileData"
 import { fetchProfileMetadata, fetchPictureData } from "@/utils/ExtractProfileData"
 import { encodeTop6Data } from "@/utils/EncodeERC725Data"
 import { useUPProvider } from "@/providers/up-provider"
+import { createClientUPProvider } from "@/providers/up-provider"
 
 type ProfileLink = {
   title: string;
@@ -268,7 +269,11 @@ export default function Top6Page() {
   };
   
   // Helper function to wait for transaction receipt
-  const waitForTransactionReceipt = async (provider: any, txHash: string, timeout = 60000) => {
+  const waitForTransactionReceipt = async (
+    provider: ReturnType<typeof createClientUPProvider>, 
+    txHash: string, 
+    timeout = 60000
+  ) => {
     const startTime = Date.now();
     
     while (Date.now() - startTime < timeout) {
