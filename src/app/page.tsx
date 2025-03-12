@@ -228,26 +228,69 @@ export default function Top6Page() {
       const encodedData = encodeTop6Data(addresses);
       console.log("Encoded data for saving to contract:", encodedData);
       
-      // Here you would send the transaction to update the contract using the provider
-      // This is a placeholder for the actual transaction code
-      // const tx = await provider.request({
-      //   method: 'eth_sendTransaction',
-      //   params: [{
-      //     from: accounts[0],
-      //     to: accounts[0], // Contract address would go here
-      //     data: encodedData.values[0], // The encoded function call
-      //   }]
-      // });
+      // Set loading state to indicate transaction in progress
+      setIsLoading(true);
       
-      // For now, just update the UI without triggering a new fetch cycle
-      setUsers(updatedUsers);
-      // We've manually updated users, so data is considered fetched
-      setDataFetched(true);
-      resetPopovers();
+      try {
+        // Send the transaction to update the contract using the provider
+        const tx = await provider.request({
+          method: 'eth_sendTransaction',
+          params: [{
+            from: accounts[0],
+            to: accounts[0], // The Universal Profile is both the sender and receiver for data updates
+            data: encodedData.values[0], // The encoded function call
+          }]
+        });
+        
+        console.log("Transaction sent:", tx);
+        // Wait for transaction confirmation
+        const receipt = await waitForTransactionReceipt(provider, tx as string);
+        console.log("Transaction confirmed:", receipt);
+        
+        // Update the UI with the new data
+        setUsers(updatedUsers);
+        // We've successfully updated users, so data is considered fetched
+        setDataFetched(true);
+        resetPopovers();
+        
+      } catch (txError) {
+        console.error("Transaction error:", txError);
+        alert("Failed to save your Top6 profile changes to the blockchain. Please try again.");
+      } finally {
+        // End loading state
+        setIsLoading(false);
+      }
       
     } catch (error) {
       console.error("Error updating address:", error);
+      setIsLoading(false);
     }
+  };
+  
+  // Helper function to wait for transaction receipt
+  const waitForTransactionReceipt = async (provider: any, txHash: string, timeout = 60000) => {
+    const startTime = Date.now();
+    
+    while (Date.now() - startTime < timeout) {
+      try {
+        const receipt = await provider.request({
+          method: 'eth_getTransactionReceipt',
+          params: [txHash],
+        });
+        
+        if (receipt) {
+          return receipt;
+        }
+        
+        // Wait 2 seconds before checking again
+        await new Promise(resolve => setTimeout(resolve, 2000));
+      } catch (error) {
+        console.error("Error checking transaction receipt:", error);
+        throw error;
+      }
+    }
+    
+    throw new Error("Transaction confirmation timed out");
   };
 
   // Connect to the UP wallet

@@ -24,19 +24,19 @@ export function UserCard({
 }: UserCardProps) {
   return (
     <Card
-      className={`w-full border-none rounded-tl-[3px] rounded-bl-[3px] rounded-tr-[9px] rounded-br-[9px] pl-[3%] pr-[2%] py-[3.5%] flex items-center justify-between cursor-pointer transition-all duration-300 min-h-[18%] ${
+      className={`w-full border-none rounded-tl-[3px] rounded-bl-[3px] rounded-tr-[9px] rounded-br-[9px] pl-[8%] pr-[2%] py-[3.5%] flex items-center justify-between cursor-pointer transition-all duration-300 min-h-[18%] ${
         isSelected ? "bg-white shadow-md" : "bg-[#94a3b8] hover:bg-[#d9d9d9]"
       } ${className}`}
       onClick={onClick}
     >
       <div className="flex items-center gap-[4%]">
-        <div className="relative w-[clamp(2rem,5vw,3.5rem)] aspect-square mr-[3%]">
+        <div className="relative w-[clamp(2.5rem,5.5vw,4rem)] aspect-square mr-[5%]">
           <Avatar className="h-full w-full rounded-md">
             <AvatarImage src={avatar} alt="User avatar" />
             <AvatarFallback>UP</AvatarFallback>
           </Avatar>
         </div>
-        <span className={`text-[clamp(0.8rem,1.5vw,1.1rem)] font-medium ${isSelected ? "text-[#0f172a]" : "text-white"}`}>{username}</span>
+        <span className={`text-[clamp(1rem,1.8vw,1.4rem)] font-medium ${isSelected ? "text-[#0f172a]" : "text-white"}`}>{username}</span>
       </div>
       <Button
         variant="ghost"
