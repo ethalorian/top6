@@ -6,7 +6,7 @@ import { top6Schema } from './GetDataKeys';
 
 // Static variables
 export const RPC_ENDPOINT = 'https://rpc.lukso.sigmacore.io';
-export const IPFS_GATEWAY = 'https://api.universalprofile.cloud/ipfs';
+export const IPFS_GATEWAY = 'https://api.universalprofile.cloud/ipfs/';
 export const SAMPLE_PROFILE_ADDRESS = '0x9139def55c73c12bcda9c44f12326686e3948634';
 
 // 💡 Note: You can debug any smart contract by using the ERC725 Tools
@@ -62,6 +62,26 @@ interface LSP3ProfileData {
   tags?: string[];
   backgroundImage?: Record<string, BackgroundImage>;
   profileImage?: Record<string, ProfileImage>;
+}
+
+// Function to properly format IPFS URLs
+export function formatIPFSUrl(url: string): string {
+  if (!url) return '';
+  
+  // If the URL is already an HTTP URL, return it as is
+  if (url.startsWith('http')) {
+    return url;
+  }
+  
+  // Handle ipfs:// protocol
+  if (url.startsWith('ipfs://')) {
+    // Remove ipfs:// prefix and ensure no double slashes
+    const cid = url.replace('ipfs://', '');
+    return `${IPFS_GATEWAY}${cid}`;
+  }
+  
+  // If it's just a CID, add the gateway
+  return `${IPFS_GATEWAY}${url}`;
 }
 
 /*
@@ -127,6 +147,8 @@ export async function fetchPictureData(address: string): Promise<ProfilePictures
     profileImageLinks: [],
   };
 
+  console.log(`Fetching picture data for address: ${address}`);
+  
   if (
     pictureData.value &&
     typeof pictureData.value === 'object' &&
@@ -134,38 +156,45 @@ export async function fetchPictureData(address: string): Promise<ProfilePictures
   ) {
     // Read JSON
     const profile = pictureData.value.LSP3Profile as LSP3ProfileData;
+    console.log('LSP3Profile data:', JSON.stringify(profile, null, 2));
+    
     const backgroundImagesIPFS = profile.backgroundImage;
     const profileImagesIPFS = profile.profileImage;
+    
+    console.log('Background images from profile:', backgroundImagesIPFS);
+    console.log('Profile images from profile:', profileImagesIPFS);
     
     try {
       if (backgroundImagesIPFS) {
         for (const i in backgroundImagesIPFS) {
-          pictures.backgroundImageLinks.push([
-            i,
-            backgroundImagesIPFS[i].url.replace('ipfs://', IPFS_GATEWAY),
-          ]);
+          const imageUrl = formatIPFSUrl(backgroundImagesIPFS[i].url);
+          console.log(`Adding background image: ${i} -> ${imageUrl}`);
+          pictures.backgroundImageLinks.push([i, imageUrl]);
         }
       }
 
       if (profileImagesIPFS) {
         for (const i in profileImagesIPFS) {
-          pictures.profileImageLinks.push([
-            i,
-            profileImagesIPFS[i].url.replace('ipfs://', IPFS_GATEWAY),
-          ]);
+          const imageUrl = formatIPFSUrl(profileImagesIPFS[i].url);
+          console.log(`Adding profile image: ${i} -> ${imageUrl}`);
+          pictures.profileImageLinks.push([i, imageUrl]);
         }
       }
 
       if (pictures.backgroundImageLinks.length > 0) {
         pictures.fullSizeBackgroundImg = pictures.backgroundImageLinks[0][1];
+        console.log('Full size background image:', pictures.fullSizeBackgroundImg);
       }
       
       if (pictures.profileImageLinks.length > 0) {
         pictures.fullSizeProfileImg = pictures.profileImageLinks[0][1];
+        console.log('Full size profile image:', pictures.fullSizeProfileImg);
       }
     } catch (error) {
       console.error('Could not fetch images: ', error);
     }
+  } else {
+    console.log('No LSP3Profile data found in response:', pictureData);
   }
 
   return pictures;

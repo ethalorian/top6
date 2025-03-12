@@ -1,6 +1,26 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
+  images: {
+    domains: [
+      'api.universalprofile.cloud',
+      'ipfs.lukso.network',
+      'gateway.universalprofile.cloud',
+      '2eff.lukso.dev'
+    ],
+    remotePatterns: [
+      {
+        protocol: 'https',
+        hostname: '**.universalprofile.cloud',
+        pathname: '/**',
+      },
+      {
+        protocol: 'https',
+        hostname: '**.lukso.network',
+        pathname: '/**',
+      }
+    ]
+  },
   async headers() {
     return [
       {

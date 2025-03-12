@@ -1,6 +1,7 @@
 import Image from "next/image"
 import { Button } from "@/components/ui/button"
 import { UserPlus, ExternalLink, Link as LinkIcon } from "lucide-react"
+import { useEffect } from "react"
 
 interface ProfileLink {
   title: string;
@@ -27,6 +28,14 @@ export function ProfilePanel({ user }: ProfilePanelProps) {
     return `${address.substring(0, 6)}...${address.substring(address.length - 4)}`
   }
   
+  // Log image URLs for debugging
+  useEffect(() => {
+    console.log("ProfilePanel rendering with images:", { 
+      avatar: user.avatar, 
+      headerImage: user.headerImage 
+    });
+  }, [user.avatar, user.headerImage]);
+  
   return (
     <div className="bg-white rounded-sm h-full flex flex-col overflow-hidden w-full">
       {/* Header Image - using percentage of container height instead of fixed height */}
@@ -35,7 +44,12 @@ export function ProfilePanel({ user }: ProfilePanelProps) {
           src={user.headerImage || defaultHeaderImage} 
           alt="Profile header" 
           fill 
-          className="object-cover" 
+          className="object-cover"
+          onError={(e) => {
+            console.error("Error loading header image:", user.headerImage);
+            // @ts-ignore - Setting src on error is a common pattern
+            e.currentTarget.src = defaultHeaderImage;
+          }}
         />
       </div>
 
@@ -48,6 +62,11 @@ export function ProfilePanel({ user }: ProfilePanelProps) {
               alt={`${user.username}'s avatar`}
               fill
               className="rounded-full object-cover"
+              onError={(e) => {
+                console.error("Error loading avatar image:", user.avatar);
+                // @ts-ignore - Setting src on error is a common pattern
+                e.currentTarget.src = "/placeholder.svg";
+              }}
             />
           </div>
           <div className="flex flex-col">
