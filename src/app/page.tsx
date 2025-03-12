@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect, useRef } from "react"
+import { useState, useEffect, useRef, useCallback } from "react"
 import { UserCard } from "@/components/UserCard"
 import { SearchPanel } from "@/components/SearchPanel"
 import { ContentPanel } from "@/components/ContentPanel"
@@ -13,6 +13,11 @@ import { encodeTop6Data } from "@/utils/EncodeERC725Data"
 import { useUPProvider } from "@/providers/up-provider"
 
 type ProfileLink = {
+  title: string;
+  url: string;
+}
+
+interface LSP3Link {
   title: string;
   url: string;
 }
@@ -44,13 +49,13 @@ export default function Top6Page() {
   const [isLoading, setIsLoading] = useState(true)
 
   // Get Universal Profile context
-  const { accounts, contextAccounts, profileConnected, provider } = useUPProvider()
+  const { accounts, profileConnected, provider } = useUPProvider()
   
   const popoverRef = useRef<HTMLDivElement>(null)
   const cardsContainerRef = useRef<HTMLDivElement>(null)
 
   // Format profile links from LSP3 data
-  const formatProfileLinks = (profileLinks: any[] | undefined): ProfileLink[] => {
+  const formatProfileLinks = (profileLinks: LSP3Link[] | undefined): ProfileLink[] => {
     if (!profileLinks || !Array.isArray(profileLinks)) return [];
     
     return profileLinks.map(link => ({
@@ -60,7 +65,7 @@ export default function Top6Page() {
   }
 
   // Fetch Top6 addresses and their profile data
-  const fetchTop6ProfileData = async () => {
+  const fetchTop6ProfileData = useCallback(async () => {
     if (!profileConnected || accounts.length === 0) return;
     
     const currentAccount = accounts[0];
@@ -119,7 +124,7 @@ export default function Top6Page() {
     } finally {
       setIsLoading(false)
     }
-  }
+  }, [accounts, profileConnected])
 
   // Fetch profile data when connected
   useEffect(() => {
@@ -130,7 +135,7 @@ export default function Top6Page() {
       setUsers([]);
       setIsLoading(true);
     }
-  }, [profileConnected, accounts]);
+  }, [profileConnected, accounts, fetchTop6ProfileData]);
 
   const handleCardClick = (cardId: string, index: number) => {
     if (selectedCardId === cardId) {

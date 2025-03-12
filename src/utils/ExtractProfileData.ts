@@ -15,18 +15,24 @@ export const SAMPLE_PROFILE_ADDRESS = '0x9139def55c73c12bcda9c44f12326686e394863
 // Parameters for ERC725 Instance
 export const config = { ipfsGateway: IPFS_GATEWAY };
 
+// Profile link interface
+export interface ProfileLink {
+  title: string;
+  url: string;
+}
+
 // Profile data interface
 export interface ProfileMetadata {
   name?: string;
   description?: string;
-  links?: any[];
+  links?: ProfileLink[];
   tags?: string[];
 }
 
 // Picture data interface
 export interface ProfilePictures {
-  backgroundImageLinks: any[];
-  profileImageLinks: any[];
+  backgroundImageLinks: Array<[string, string]>;
+  profileImageLinks: Array<[string, string]>;
   fullSizeBackgroundImg?: string;
   fullSizeProfileImg?: string;
 }
@@ -38,20 +44,25 @@ export interface Top6Data {
 
 export type AddressType = string;
 
-// Fetchable metadata information
-let name: string;
-let description: string;
-let links: any = [];
-let firstLinkTitle: string;
-let firstLinkURL: string;
-let tags: string[] = [];
-let firstTag;
+// Profile image interface 
+interface ProfileImage {
+  url: string;
+}
 
-// Fetchable picture information
-const backgroundImageLinks: any[] = [];
-let fullSizeBackgroundImg;
-const profileImageLinks: any[] = [];
-let fullSizeProfileImg;
+// Background image interface
+interface BackgroundImage {
+  url: string;
+}
+
+// LSP3Profile interface for type safety
+interface LSP3ProfileData {
+  name?: string;
+  description?: string;
+  links?: ProfileLink[];
+  tags?: string[];
+  backgroundImage?: Record<string, BackgroundImage>;
+  profileImage?: Record<string, ProfileImage>;
+}
 
 /*
  * Fetch the @param's Universal Profile's
@@ -93,10 +104,11 @@ export async function fetchProfileMetadata(address: string): Promise<ProfileMeta
     'LSP3Profile' in profileData.value
   ) {
     // Read JSON
-    metadata.name = profileData.value.LSP3Profile.name;
-    metadata.description = profileData.value.LSP3Profile.description;
-    metadata.links = profileData.value.LSP3Profile.links;
-    metadata.tags = profileData.value.LSP3Profile.tags;
+    const profile = profileData.value.LSP3Profile as LSP3ProfileData;
+    metadata.name = profile.name;
+    metadata.description = profile.description;
+    metadata.links = profile.links;
+    metadata.tags = profile.tags;
   }
 
   return metadata;
@@ -121,21 +133,27 @@ export async function fetchPictureData(address: string): Promise<ProfilePictures
     'LSP3Profile' in pictureData.value
   ) {
     // Read JSON
-    const backgroundImagesIPFS = pictureData.value.LSP3Profile.backgroundImage;
-    const profileImagesIPFS = pictureData.value.LSP3Profile.profileImage;
+    const profile = pictureData.value.LSP3Profile as LSP3ProfileData;
+    const backgroundImagesIPFS = profile.backgroundImage;
+    const profileImagesIPFS = profile.profileImage;
+    
     try {
-      for (const i in backgroundImagesIPFS) {
-        pictures.backgroundImageLinks.push([
-          i,
-          backgroundImagesIPFS[i].url.replace('ipfs://', IPFS_GATEWAY),
-        ]);
+      if (backgroundImagesIPFS) {
+        for (const i in backgroundImagesIPFS) {
+          pictures.backgroundImageLinks.push([
+            i,
+            backgroundImagesIPFS[i].url.replace('ipfs://', IPFS_GATEWAY),
+          ]);
+        }
       }
 
-      for (const i in profileImagesIPFS) {
-        pictures.profileImageLinks.push([
-          i,
-          profileImagesIPFS[i].url.replace('ipfs://', IPFS_GATEWAY),
-        ]);
+      if (profileImagesIPFS) {
+        for (const i in profileImagesIPFS) {
+          pictures.profileImageLinks.push([
+            i,
+            profileImagesIPFS[i].url.replace('ipfs://', IPFS_GATEWAY),
+          ]);
+        }
       }
 
       if (pictures.backgroundImageLinks.length > 0) {
@@ -179,6 +197,7 @@ export async function extractTop6Data(address: string): Promise<Top6Data> {
 }
 
 // Debug
-fetchProfileMetadata(SAMPLE_PROFILE_ADDRESS);
-fetchPictureData(SAMPLE_PROFILE_ADDRESS);
-// extractTop6Data(SAMPLE_PROFILE_ADDRESS);
+// Uncomment these to test the functions
+// fetchProfileMetadata(SAMPLE_PROFILE_ADDRESS).then(console.log);
+// fetchPictureData(SAMPLE_PROFILE_ADDRESS).then(console.log);
+// extractTop6Data(SAMPLE_PROFILE_ADDRESS).then(console.log);
