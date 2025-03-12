@@ -47,6 +47,8 @@ export default function Top6Page() {
   const [selectedCardId, setSelectedCardId] = useState<string | null>(null)
   const [users, setUsers] = useState<UserWithProfile[]>([])
   const [isLoading, setIsLoading] = useState(true)
+  const [dataFetched, setDataFetched] = useState(false)
+  const currentAccountRef = useRef<string | null>(null)
 
   // Get Universal Profile context
   const { accounts, profileConnected, provider } = useUPProvider()
@@ -120,11 +122,13 @@ export default function Top6Page() {
       }
       
       setUsers(userData);
+      setDataFetched(true);
     } catch (error) {
       console.error("Error fetching Top6 data:", error);
       // If there's an error, create 6 empty slots
       const emptySlots = Array(6).fill(0).map(() => ({...DEFAULT_PROFILE}));
       setUsers(emptySlots);
+      setDataFetched(true);
     } finally {
       setIsLoading(false);
     }
@@ -132,14 +136,27 @@ export default function Top6Page() {
 
   // Fetch profile data when connected
   useEffect(() => {
+    // If we're connected and have an account
     if (profileConnected && accounts.length > 0) {
-      fetchTop6ProfileData();
+      const currentAccount = accounts[0];
+      
+      // Only fetch if we need to:
+      // 1. We haven't fetched data yet, OR
+      // 2. The account has changed
+      if (!dataFetched || currentAccountRef.current !== currentAccount) {
+        // Update the account ref
+        currentAccountRef.current = currentAccount;
+        // Fetch the data
+        fetchTop6ProfileData();
+      }
     } else if (!profileConnected) {
-      // Only reset users array when disconnected
+      // Reset state when disconnected
       setUsers([]);
       setIsLoading(true);
+      setDataFetched(false);
+      currentAccountRef.current = null;
     }
-  }, [profileConnected, accounts, fetchTop6ProfileData]);
+  }, [profileConnected, accounts, fetchTop6ProfileData, dataFetched]);
 
   const handleCardClick = (cardId: string, index: number) => {
     if (selectedCardId === cardId) {
@@ -212,8 +229,10 @@ export default function Top6Page() {
       //   }]
       // });
       
-      // For now, just update the UI
+      // For now, just update the UI without triggering a new fetch cycle
       setUsers(updatedUsers);
+      // We've manually updated users, so data is considered fetched
+      setDataFetched(true);
       resetPopovers();
       
     } catch (error) {

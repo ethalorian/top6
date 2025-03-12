@@ -107,7 +107,7 @@ export function SearchPanel({ onCancel, onAddressSelected }: SearchPanelProps) {
             </h3>
             <Input 
               placeholder="0×01234..." 
-              className={`bg-white border-[#e2e8f0] h-12 text-base rounded-lg ${error ? 'border-red-500' : ''}`}
+              className={`bg-white border-[#e2e8f0] h-12 text-base rounded-lg text-black ${error ? 'border-red-500' : ''}`}
               value={address}
               onChange={handleAddressChange}
             />
