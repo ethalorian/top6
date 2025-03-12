@@ -26,7 +26,7 @@ export function SearchPanel({ onCancel, onAddressSelected }: SearchPanelProps) {
       setIsValidAddress(valid)
       setError(valid ? null : "Please enter a valid Ethereum address")
       return valid
-    } catch (_) {
+    } catch {
       setIsValidAddress(false)
       setError("Please enter a valid Ethereum address")
       return false
