@@ -68,7 +68,13 @@ export default function Top6Page() {
 
   // Fetch Top6 addresses and their profile data
   const fetchTop6ProfileData = useCallback(async () => {
-    if (!profileConnected || accounts.length === 0) return;
+    if (!profileConnected || !accounts || accounts.length === 0) {
+      console.log("Cannot fetch profiles: Not connected or no accounts available");
+      const emptySlots = Array(6).fill(0).map(() => ({...DEFAULT_PROFILE}));
+      setUsers(emptySlots);
+      setIsLoading(false);
+      return;
+    }
     
     const currentAccount = accounts[0];
     setIsLoading(true);
@@ -137,7 +143,7 @@ export default function Top6Page() {
   // Fetch profile data when connected
   useEffect(() => {
     // If we're connected and have an account
-    if (profileConnected && accounts.length > 0) {
+    if (profileConnected && accounts && accounts.length > 0) {
       const currentAccount = accounts[0];
       
       // Only fetch if we need to:
@@ -150,9 +156,10 @@ export default function Top6Page() {
         fetchTop6ProfileData();
       }
     } else if (!profileConnected) {
-      // Reset state when disconnected
-      setUsers([]);
-      setIsLoading(true);
+      // Reset state when disconnected - safely initialize with empty slots
+      const emptySlots = Array(6).fill(0).map(() => ({...DEFAULT_PROFILE}));
+      setUsers(emptySlots);
+      setIsLoading(false);
       setDataFetched(false);
       currentAccountRef.current = null;
     }
@@ -184,7 +191,10 @@ export default function Top6Page() {
 
   // Handle address selection from search panel
   const handleAddressSelected = async (address: string) => {
-    if (!profileConnected || accounts.length === 0 || !selectedCardId) return;
+    if (!profileConnected || !accounts || accounts.length === 0 || !selectedCardId) {
+      console.error("Cannot add address: Profile not connected or no account selected");
+      return;
+    }
     
     // Extract index from selected card id
     const index = parseInt(selectedCardId.replace('@', ''), 10);
@@ -281,7 +291,7 @@ export default function Top6Page() {
           >
             <ChevronLeft className="w-[clamp(1.5rem,3vw,3rem)] h-[clamp(1.5rem,3vw,3rem)]" />
             <span>
-              {profileConnected 
+              {profileConnected && accounts.length > 0
                 ? `Connected: ${accounts[0].substring(0, 6)}...${accounts[0].substring(accounts[0].length - 4)}`
                 : "Click to Connect"
               }
