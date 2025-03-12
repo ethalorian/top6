@@ -93,9 +93,15 @@ export const fetchTop6Addresses = async (address: string): Promise<AddressType[]
         console.log('No Top6 data found for address:', address);
         return [];
       }
-    } catch (innerError: any) {
+    } catch (innerError: unknown) {
       // Handle specific error for ERC725Y interface issues
-      if (innerError.message && innerError.message.includes('does not support ERC725Y interface')) {
+      if (
+        typeof innerError === 'object' && 
+        innerError !== null && 
+        'message' in innerError && 
+        typeof innerError.message === 'string' && 
+        innerError.message.includes('does not support ERC725Y interface')
+      ) {
         console.warn(`Contract ${address} does not support the ERC725Y interface. This is normal if it's not a Universal Profile contract.`);
       }
       
