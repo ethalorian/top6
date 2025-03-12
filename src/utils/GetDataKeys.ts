@@ -12,7 +12,7 @@ export const IPFS_GATEWAY = 'https://api.universalprofile.cloud/ipfs';
 export const top6Schema: ERC725JSONSchema[] = [
   {
     "name": "Top6",
-    "key": "0x9a24e706cd29677181fae33186e93e1fef9d5e33edd111c8b5fa8560cc99650f",
+    "key": "0x1fe8930f76ea78062f5fdcb33cd0dd012dfce683baabef33c3f6bcce2d2cea3b",
     "keyType": "Singleton",
     "valueType": "address[]",
     "valueContent":"Address",
