@@ -1,7 +1,8 @@
 import Image from "next/image"
 import { Button } from "@/components/ui/button"
-import { UserPlus, ExternalLink, Link as LinkIcon } from "lucide-react"
+import { ExternalLink, Link as LinkIcon } from "lucide-react"
 import { useEffect } from "react"
+import { FollowButton } from "@/components/ui/FollowButton"
 
 interface ProfileLink {
   title: string;
@@ -121,10 +122,12 @@ export function ProfilePanel({ user }: ProfilePanelProps) {
             <ExternalLink className="mr-[2%] h-[clamp(1.6rem,3vw,2.2rem)] w-[clamp(1.6rem,3vw,2.2rem)]" />
             View Profile
           </Button>
-          <Button className="bg-[#4a044e] hover:bg-[#3a033e] text-white rounded-sm h-auto py-[3%] px-[5%] flex-1 text-[clamp(0.8rem,1.5vw,1.1rem)]">
-            <UserPlus className="mr-[2%] h-[clamp(1.6rem,3vw,2.2rem)] w-[clamp(1.6rem,3vw,2.2rem)]" />
-            Follow
-          </Button>
+          <FollowButton 
+            address={user.address} 
+            className="bg-[#4a044e] hover:bg-[#3a033e] text-white rounded-sm h-auto py-[3%] px-[5%] flex-1 text-[clamp(0.8rem,1.5vw,1.1rem)]"
+            variant="default"
+            showText={true}
+          />
         </div>
       </div>
     </div>

@@ -6,6 +6,7 @@ import { useUPProvider } from "@/providers/up-provider";
 import { createClientUPProvider } from "@/providers/up-provider";
 import { top6Schema } from "@/utils/GetDataKeys";
 import { ethers } from "ethers";
+import { followAddress, unfollowAddress, checkIsFollowing } from "@/utils/FollowerSystem";
 
 // Types
 export type ProfileLink = {
@@ -74,6 +75,9 @@ interface Top6ContextType {
   resetPopovers: () => void;
   handleAddressSelected: (address: string) => Promise<void>;
   handleRemoveAddress: (index: number) => Promise<void>;
+  followAddress: (addressToFollow: string) => Promise<void>;
+  unfollowAddress: (addressToUnfollow: string) => Promise<void>;
+  checkIsFollowing: (addressToCheck: string) => Promise<boolean>;
   connectWallet: () => Promise<void>;
   fetchTop6ProfileData: () => Promise<void>;
   profileConnected: boolean;
@@ -454,6 +458,70 @@ export function Top6Provider({ children }: { children: ReactNode }) {
     }
   };
 
+  // Follow an address
+  const handleFollowAddress = async (addressToFollow: string) => {
+    if (!profileConnected || !accounts || accounts.length === 0) {
+      console.error("Cannot follow address: Profile not connected or no account selected");
+      return;
+    }
+
+    try {
+      setIsLoading(true);
+      const followerAddress = accounts[0];
+      const tx = await followAddress(provider, followerAddress, addressToFollow);
+      
+      // Wait for transaction confirmation
+      await waitForTransactionReceipt(provider, tx);
+      console.log("Follow transaction confirmed");
+      
+    } catch (error) {
+      console.error("Error following address:", error);
+      alert("Failed to follow address. Please try again.");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // Unfollow an address
+  const handleUnfollowAddress = async (addressToUnfollow: string) => {
+    if (!profileConnected || !accounts || accounts.length === 0) {
+      console.error("Cannot unfollow address: Profile not connected or no account selected");
+      return;
+    }
+
+    try {
+      setIsLoading(true);
+      const followerAddress = accounts[0];
+      const tx = await unfollowAddress(provider, followerAddress, addressToUnfollow);
+      
+      // Wait for transaction confirmation
+      await waitForTransactionReceipt(provider, tx);
+      console.log("Unfollow transaction confirmed");
+      
+    } catch (error) {
+      console.error("Error unfollowing address:", error);
+      alert("Failed to unfollow address. Please try again.");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // Check if current user is following an address
+  const handleCheckIsFollowing = async (addressToCheck: string) => {
+    if (!profileConnected || !accounts || accounts.length === 0) {
+      console.log("Cannot check follow status: Profile not connected or no account selected");
+      return false;
+    }
+
+    try {
+      const followerAddress = accounts[0];
+      return await checkIsFollowing(provider, followerAddress, addressToCheck);
+    } catch (error) {
+      console.error("Error checking follow status:", error);
+      return false;
+    }
+  };
+
   // Context value
   const contextValue: Top6ContextType = {
     users,
@@ -466,6 +534,9 @@ export function Top6Provider({ children }: { children: ReactNode }) {
     resetPopovers,
     handleAddressSelected,
     handleRemoveAddress,
+    followAddress: handleFollowAddress,
+    unfollowAddress: handleUnfollowAddress,
+    checkIsFollowing: handleCheckIsFollowing,
     connectWallet,
     fetchTop6ProfileData,
     profileConnected,

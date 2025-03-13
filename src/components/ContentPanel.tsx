@@ -1,7 +1,14 @@
 import { Button } from "@/components/ui/button"
 import Image from 'next/image'
+import { FollowButton } from "@/components/ui/FollowButton"
+import { useUPProvider } from "@/providers/up-provider"
+
+// TOP 6 platform address (replace with the actual TOP 6 platform address)
+const TOP6_PLATFORM_ADDRESS = "0xf01103E5a9909Fc0DBe8166dA7085e0285daDDcA";
 
 export function ContentPanel() {
+  const { profileConnected } = useUPProvider();
+
   return (
     <div className="w-full h-full flex flex-col justify-between">
       <div className="space-y-[5%]">
@@ -27,9 +34,20 @@ export function ContentPanel() {
       </div>
 
       <div className="w-[80%] mt-auto">
-        <Button className="bg-[#0f172a] hover:bg-[#1e293b] text-white py-[3%] px-[2%] rounded-sm text-[clamp(0.9rem,1.8vw,1.3rem)] h-auto w-[100%]">
-          Follow TOP 6
-        </Button>
+        {profileConnected ? (
+          <FollowButton 
+            address={TOP6_PLATFORM_ADDRESS}
+            className="bg-[#0f172a] hover:bg-[#1e293b] text-white py-[3%] px-[2%] rounded-sm text-[clamp(0.9rem,1.8vw,1.3rem)] h-auto w-[100%]"
+            showText={true}
+          />
+        ) : (
+          <Button 
+            className="bg-[#0f172a] hover:bg-[#1e293b] text-white py-[3%] px-[2%] rounded-sm text-[clamp(0.9rem,1.8vw,1.3rem)] h-auto w-[100%]"
+            disabled={true}
+          >
+            Connect to Follow TOP 6
+          </Button>
+        )}
       </div>
     </div>
   )
