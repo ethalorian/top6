@@ -4,7 +4,7 @@ import { FollowButton } from "@/components/ui/FollowButton"
 import { useUPProvider } from "@/providers/up-provider"
 
 // TOP 6 platform address (replace with the actual TOP 6 platform address)
-const TOP6_PLATFORM_ADDRESS = "0xf01103E5a9909Fc0DBe8166dA7085e0285daDDcA";
+const TOP6_PLATFORM_ADDRESS = "0x71c77Ec744d9Cd698Da65ff2D3169C662A4DF47d";
 
 export function ContentPanel() {
   const { profileConnected } = useUPProvider();
