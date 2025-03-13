@@ -97,7 +97,7 @@ export async function followAddress(
 }
 
 /**
- * Unfollow an address using the LSP26 Follower System
+ * Unfollow an address uing the LSP26 Follower System
  * @param provider The provider to use for the transaction
  * @param followerAddress The address that will unfollow (typically the current user)
  * @param addressToUnfollow The address to unfollow
