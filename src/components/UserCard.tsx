@@ -12,6 +12,7 @@ interface UserCardProps {
   isSelected?: boolean
   onClick: () => void
   onRemove?: () => void
+  onAddClick?: () => void
   className?: string
 }
 
@@ -22,6 +23,7 @@ export function UserCard({
   isSelected = false,
   onClick,
   onRemove,
+  onAddClick,
   className = "",
 }: UserCardProps) {
   return (
@@ -67,7 +69,11 @@ export function UserCard({
           ${isSelected ? "text-[#0f172a]" : "text-white"} hover:text-[#4a044e] hover:bg-transparent`}
           onClick={(e) => {
             e.stopPropagation()
-            onClick()
+            if (onAddClick) {
+              onAddClick()
+            } else {
+              onClick()
+            }
           }}
         >
           <div

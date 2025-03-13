@@ -9,7 +9,8 @@ export function Top6Grid() {
     selectedCardId, 
     handleCardClick, 
     profileConnected,
-    handleRemoveAddress
+    handleRemoveAddress,
+    handleAddButtonClick
   } = useTop6();
   
   const cardsContainerRef = useRef<HTMLDivElement>(null);
@@ -47,6 +48,7 @@ export function Top6Grid() {
                 isSelected={selectedCardId === `@${index}`}
                 onClick={() => handleCardClick(`@${index}`, index)}
                 onRemove={user.hasData ? () => handleRemoveAddress(index) : undefined}
+                onAddClick={() => handleAddButtonClick(index)}
                 className={`text-[clamp(0.65rem,1.4vw,0.9rem)] flex flex-row items-center
                   ${selectedCardId === `@${index}` ? 
                     "-ml-[clamp(0.5rem,3vw,3.5rem)] transition-all duration-300" : 

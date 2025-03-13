@@ -70,6 +70,7 @@ interface Top6ContextType {
   selectedUser: number | null;
   selectedCardId: string | null;
   handleCardClick: (cardId: string, index: number) => void;
+  handleAddButtonClick: (index: number) => void;
   resetPopovers: () => void;
   handleAddressSelected: (address: string) => Promise<void>;
   handleRemoveAddress: (index: number) => Promise<void>;
@@ -254,6 +255,15 @@ export function Top6Provider({ children }: { children: ReactNode }) {
       setSelectedUser(index);
       setShowSearchPanel(false);
     }
+  };
+
+  // New function to handle add button click
+  const handleAddButtonClick = (index: number) => {
+    // Always show search panel when add button is clicked
+    const cardId = `@${index}`;
+    setSelectedCardId(cardId);
+    setSelectedUser(null);
+    setShowSearchPanel(true);
   };
 
   const resetPopovers = () => {
@@ -452,6 +462,7 @@ export function Top6Provider({ children }: { children: ReactNode }) {
     selectedUser,
     selectedCardId,
     handleCardClick,
+    handleAddButtonClick,
     resetPopovers,
     handleAddressSelected,
     handleRemoveAddress,
