@@ -375,7 +375,7 @@ export function Top6Provider({ children }: { children: ReactNode }) {
   );
 }
 
-// Custom hook to use the Top6 context
+// Custom hook to use the Top6 contex
 export function useTop6() {
   const context = useContext(Top6Context);
   if (context === undefined) {
