@@ -189,7 +189,7 @@ export function Top6Provider({ children }: { children: ReactNode }) {
   }, [accounts, profileConnected]);
 
   // Helper function to wait for transaction receipt
-  const waitForTransactionReceipt = async (
+  const waitForTransactionReceipt = useCallback(async (
     provider: ReturnType<typeof createClientUPProvider>, 
     txHash: string, 
     timeout = 60000
@@ -211,12 +211,12 @@ export function Top6Provider({ children }: { children: ReactNode }) {
         await new Promise(resolve => setTimeout(resolve, 2000));
       } catch (error) {
         console.error("Error checking transaction receipt:", error);
-        throw error;
+        // Keep trying despite errors
       }
     }
     
-    throw new Error("Transaction confirmation timed out");
-  };
+    throw new Error(`Transaction ${txHash} not confirmed within ${timeout / 1000} seconds`);
+  }, []);
 
   // Fetch profile data when connected
   useEffect(() => {

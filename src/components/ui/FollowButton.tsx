@@ -8,7 +8,6 @@ import { useTop6 } from "@/providers/Top6Provider"
 interface FollowButtonProps {
   address: string
   className?: string
-  variant?: "default" | "outline" | "ghost"
   size?: "default" | "sm" | "lg" | "icon"
   showText?: boolean
 }
@@ -17,7 +16,6 @@ interface FollowButtonProps {
 const FollowButton = memo(function FollowButtonInner({
   address,
   className = "",
-  variant = "default",
   size = "default",
   showText = true
 }: FollowButtonProps) {
