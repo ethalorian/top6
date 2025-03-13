@@ -1,6 +1,7 @@
 import { ERC725 } from '@erc725/erc725.js';
 import lsp3ProfileSchema from '@erc725/erc725.js/schemas/LSP3ProfileMetadata.json';
 import { top6Schema } from './GetDataKeys';
+import { EMPTY_SLOT_PLACEHOLDER } from './EncodeERC725Data';
 
 export const SAMPLE_UP_ADDRESS = '0xEda145b45f76EDB44F112B0d46654044E7B8F319';
 export const RPC_ENDPOINT = 'https://rpc.lukso.sigmacore.io';
@@ -66,7 +67,7 @@ export const fetchUniversalReceiver = async (address: string) => {
 /**
  * Fetch Top6 addresses directly from a contract address
  * @param address The contract address to fetch Top6 data from
- * @returns Promise resolving to an array of Top6 addresses
+ * @returns Promise resolving to an array of Top6 addresses with positions preserved (empty slots contain empty strings)
  */
 export const fetchTop6Addresses = async (address: string): Promise<AddressType[]> => {
   try {
@@ -88,6 +89,7 @@ export const fetchTop6Addresses = async (address: string): Promise<AddressType[]
       // If the result is valid, return the addresses
       if (result && result.value) {
         console.log('Successfully fetched Top6 addresses:', result.value);
+        // Return addresses with positions preserved (result.value should already have placeholders)
         return result.value as AddressType[];
       } else {
         console.log('No Top6 data found for address:', address);

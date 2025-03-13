@@ -122,20 +122,26 @@ export function Top6Provider({ children }: { children: ReactNode }) {
       console.log('Fetching Top6 addresses for account:', currentAccount);
       const addresses = await fetchTop6Addresses(currentAccount);
       
-      // Create an array to hold the user data
-      const userData: UserWithProfile[] = [];
+      // Create an array to hold the user data with all 6 slots
+      const userData: UserWithProfile[] = Array(6).fill(null).map(() => ({...DEFAULT_PROFILE}));
       
       // If there are addresses, fetch their profile data
       if (addresses.length > 0) {
         console.log(`Found ${addresses.length} Top6 addresses to fetch profiles for`);
-        for (const addr of addresses) {
+        
+        // Process each address and put it in its corresponding position
+        for (let i = 0; i < addresses.length; i++) {
+          const addr = addresses[i];
+          // Skip empty slots
+          if (!addr || addr.trim() === '') continue;
+          
           try {
             // Fetch profile metadata for each address
             const profileData = await fetchProfileMetadata(addr);
             const pictureData = await fetchPictureData(addr);
             
-            // Add user with profile data
-            userData.push({
+            // Update the user at the specific index
+            userData[i] = {
               username: profileData.name || `${addr.substring(0, 6)}...${addr.substring(addr.length - 4)}`,
               avatar: pictureData.fullSizeProfileImg || "/placeholder.svg?height=48&width=48",
               hasData: true,
@@ -144,26 +150,21 @@ export function Top6Provider({ children }: { children: ReactNode }) {
               badges: profileData.tags || [],
               links: formatProfileLinks(profileData.links),
               address: addr
-            });
+            };
           } catch (error) {
             console.error(`Error fetching profile for address ${addr}:`, error);
-            // Add user with minimal data if profile fetch fails
-            userData.push({
+            // Add user with minimal data if profile fetch fails, but preserve position
+            userData[i] = {
               username: `${addr.substring(0, 6)}...${addr.substring(addr.length - 4)}`,
               avatar: "/placeholder.svg?height=48&width=48",
               hasData: true,
               description: "No profile data available",
               address: addr
-            });
+            };
           }
         }
       } else {
         console.log('No Top6 addresses found, showing empty slots - this is normal for new profiles');
-      }
-      
-      // Fill remaining slots up to 6
-      while (userData.length < 6) {
-        userData.push({...DEFAULT_PROFILE});
       }
       
       setUsers(userData);
@@ -289,10 +290,16 @@ export function Top6Provider({ children }: { children: ReactNode }) {
         address: address
       };
       
-      // Extract just the addresses for encoding
-      const addresses = updatedUsers
-        .filter(user => user.hasData && user.address)
-        .map(user => user.address);
+      // Extract addresses for encoding, preserving positions
+      const addresses: string[] = [];
+      // Ensure we have exactly 6 slots
+      for (let i = 0; i < 6; i++) {
+        if (i < updatedUsers.length && updatedUsers[i].hasData && updatedUsers[i].address) {
+          addresses[i] = updatedUsers[i].address;
+        } else {
+          addresses[i] = '';
+        }
+      }
       
       // Encode the updated address list to be saved to the contract
       const encodedData = encodeTop6Data(addresses);
@@ -363,10 +370,16 @@ export function Top6Provider({ children }: { children: ReactNode }) {
       // Replace the user at the specified index with an empty slot
       updatedUsers[index] = {...DEFAULT_PROFILE};
       
-      // Extract just the addresses for encoding
-      const addresses = updatedUsers
-        .filter(user => user.hasData && user.address)
-        .map(user => user.address);
+      // Extract addresses for encoding, preserving positions
+      const addresses: string[] = [];
+      // Ensure we have exactly 6 slots
+      for (let i = 0; i < 6; i++) {
+        if (i < updatedUsers.length && updatedUsers[i].hasData && updatedUsers[i].address) {
+          addresses[i] = updatedUsers[i].address;
+        } else {
+          addresses[i] = '';
+        }
+      }
       
       // Encode the updated address list to be saved to the contract
       const encodedData = encodeTop6Data(addresses);

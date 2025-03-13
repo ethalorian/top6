@@ -4,6 +4,9 @@ import { top6Schema } from './GetDataKeys';
 export type AddressType = string;
 export const RPC_ENDPOINT = 'https://rpc.lukso.sigmacore.io';
 
+// Define a placeholder value for empty slots
+export const EMPTY_SLOT_PLACEHOLDER = '0x0000000000000000000000000000000000000000';
+
 /**
  * Create an ERC725 instance with the Top6 schema
  * @param address Optional contract address
@@ -19,20 +22,25 @@ export const createERC725InstanceForEncoding = (address?: string) => {
 
 /**
  * Encode Top6 addresses data according to ERC725 schema
- * @param addresses Array of addresses to encode
+ * @param addresses Array of addresses to encode (may contain empty slots)
  * @returns Encoded data object with keyName and encoded value
  */
 export const encodeTop6Data = (addresses: AddressType[]) => {
+  // Replace empty addresses with the placeholder address
+  const processedAddresses = addresses.map(addr => 
+    !addr || addr.trim() === '' ? EMPTY_SLOT_PLACEHOLDER : addr
+  );
+  
   const erc725js = createERC725InstanceForEncoding();
   return erc725js.encodeData([
-    { keyName: 'Top6', value: addresses },
+    { keyName: 'Top6', value: processedAddresses },
   ]);
 };
 
 /**
  * Decode data using the Top6 schema
  * @param encodedData Object containing the keyName and encoded data from the contract
- * @returns Array of decoded addresses
+ * @returns Array of decoded addresses (with placeholders replaced by empty strings)
  */
 export const decodeTop6Data = (encodedData: { keyName: string; value: string }) => {
   const erc725js = createERC725InstanceForEncoding();
@@ -40,7 +48,10 @@ export const decodeTop6Data = (encodedData: { keyName: string; value: string }) 
   
   // The decoded data will be in the format [{ name: 'Top6', value: ['0x...', '0x...'] }]
   if (decodedData && decodedData.length > 0 && decodedData[0].value) {
-    return decodedData[0].value as AddressType[];
+    // Replace placeholder addresses with empty strings
+    return (decodedData[0].value as AddressType[]).map(addr => 
+      addr === EMPTY_SLOT_PLACEHOLDER ? '' : addr
+    );
   }
   
   return [];
