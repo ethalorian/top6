@@ -1,7 +1,6 @@
 import { ERC725 } from '@erc725/erc725.js';
 import lsp3ProfileSchema from '@erc725/erc725.js/schemas/LSP3ProfileMetadata.json';
 import { top6Schema } from './GetDataKeys';
-import { EMPTY_SLOT_PLACEHOLDER } from './EncodeERC725Data';
 
 export const SAMPLE_UP_ADDRESS = '0xEda145b45f76EDB44F112B0d46654044E7B8F319';
 export const RPC_ENDPOINT = 'https://rpc.lukso.sigmacore.io';
