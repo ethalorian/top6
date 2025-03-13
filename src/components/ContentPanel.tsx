@@ -3,7 +3,7 @@ import Image from 'next/image'
 import { FollowButton } from "@/components/ui/FollowButton"
 import { useUPProvider } from "@/providers/up-provider"
 
-// TOP 6 platform address (replace with the actual TOP 6 platform address)
+// TOP 6 platform address (replace with the actual TOP 6 platfor address)
 const TOP6_PLATFORM_ADDRESS = "0x71c77Ec744d9Cd698Da65ff2D3169C662A4DF47d";
 
 export function ContentPanel() {
