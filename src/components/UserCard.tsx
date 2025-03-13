@@ -1,6 +1,6 @@
 "use client"
 
-import { UserPlus } from "lucide-react"
+import { UserPlus, Trash2 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar"
@@ -11,6 +11,7 @@ interface UserCardProps {
   hasData?: boolean
   isSelected?: boolean
   onClick: () => void
+  onRemove?: () => void
   className?: string
 }
 
@@ -20,6 +21,7 @@ export function UserCard({
   hasData = false,
   isSelected = false,
   onClick,
+  onRemove,
   className = "",
 }: UserCardProps) {
   return (
@@ -38,23 +40,44 @@ export function UserCard({
         </div>
         <span className={`text-[clamp(1rem,1.8vw,1.4rem)] font-medium ${isSelected ? "text-[#0f172a]" : "text-white"}`}>{username}</span>
       </div>
-      <Button
-        variant="ghost"
-        size="icon"
-        className={`flex items-center justify-center h-[clamp(2rem,4vw,3.5rem)] w-[clamp(2rem,4vw,3.5rem)] p-5 
-        ${isSelected ? "text-[#0f172a]" : "text-white"} hover:text-[#4a044e] hover:bg-transparent`}
-        onClick={(e) => {
-          e.stopPropagation()
-          onClick()
-        }}
-      >
-        <div
-          className={`flex items-center justify-center h-full w-full rounded-none border ${isSelected ? "border-[#0f172a]" : "border-white"}`}
+      <div className="flex items-center gap-2">
+        {hasData && onRemove && (
+          <Button
+            variant="ghost"
+            size="icon"
+            className={`flex items-center justify-center h-[clamp(2rem,4vw,3.5rem)] w-[clamp(2rem,4vw,3.5rem)] p-5 
+            ${isSelected ? "text-[#0f172a]" : "text-white"} hover:text-red-600 hover:bg-transparent`}
+            onClick={(e) => {
+              e.stopPropagation()
+              onRemove()
+            }}
+          >
+            <div
+              className={`flex items-center justify-center h-full w-full rounded-none border ${isSelected ? "border-[#0f172a]" : "border-white"}`}
+            >
+              <Trash2 className="h-[50%] w-[50%]" />
+            </div>
+            <span className="sr-only">Remove user</span>
+          </Button>
+        )}
+        <Button
+          variant="ghost"
+          size="icon"
+          className={`flex items-center justify-center h-[clamp(2rem,4vw,3.5rem)] w-[clamp(2rem,4vw,3.5rem)] p-5 
+          ${isSelected ? "text-[#0f172a]" : "text-white"} hover:text-[#4a044e] hover:bg-transparent`}
+          onClick={(e) => {
+            e.stopPropagation()
+            onClick()
+          }}
         >
-          <UserPlus className="h-[50%] w-[50%] mr-1" />
-        </div>
-        <span className="sr-only">{hasData ? "View profile" : "Add user"}</span>
-      </Button>
+          <div
+            className={`flex items-center justify-center h-full w-full rounded-none border ${isSelected ? "border-[#0f172a]" : "border-white"}`}
+          >
+            <UserPlus className="h-[50%] w-[50%] mr-1" />
+          </div>
+          <span className="sr-only">{hasData ? "View profile" : "Add user"}</span>
+        </Button>
+      </div>
     </Card>
   )
 }

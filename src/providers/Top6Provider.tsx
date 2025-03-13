@@ -72,6 +72,7 @@ interface Top6ContextType {
   handleCardClick: (cardId: string, index: number) => void;
   resetPopovers: () => void;
   handleAddressSelected: (address: string) => Promise<void>;
+  handleRemoveAddress: (index: number) => Promise<void>;
   connectWallet: () => Promise<void>;
   fetchTop6ProfileData: () => Promise<void>;
   profileConnected: boolean;
@@ -342,6 +343,80 @@ export function Top6Provider({ children }: { children: ReactNode }) {
     }
   };
 
+  // Handle removal of an address at a specific index
+  const handleRemoveAddress = async (index: number) => {
+    if (!profileConnected || !accounts || accounts.length === 0) {
+      console.error("Cannot remove address: Profile not connected or no account selected");
+      return;
+    }
+    
+    // Validate that the index is within range
+    if (index < 0 || index >= users.length) {
+      console.error("Invalid index for address removal:", index);
+      return;
+    }
+
+    try {
+      // Create a copy of the current users array
+      const updatedUsers = [...users];
+      
+      // Replace the user at the specified index with an empty slot
+      updatedUsers[index] = {...DEFAULT_PROFILE};
+      
+      // Extract just the addresses for encoding
+      const addresses = updatedUsers
+        .filter(user => user.hasData && user.address)
+        .map(user => user.address);
+      
+      // Encode the updated address list to be saved to the contract
+      const encodedData = encodeTop6Data(addresses);
+      console.log("Encoded data for saving to contract after removal:", encodedData);
+      
+      // Create ethers interface for encoding function call
+      const iface = new ethers.utils.Interface(UP_ABI);
+      const calldata = iface.encodeFunctionData("setData", [TOP6_DATA_KEY, encodedData.values[0]]);
+      
+      console.log("Generated calldata for setData after removal:", calldata);
+      
+      // Set loading state to indicate transaction in progress
+      setIsLoading(true);
+      
+      try {
+        // Send the transaction to update the contract using the provider
+        const tx = await provider.request({
+          method: 'eth_sendTransaction',
+          params: [{
+            from: accounts[0],
+            to: accounts[0], // The Universal Profile contract address
+            data: calldata, // Properly encoded function call to setData
+          }]
+        });
+        
+        console.log("Remove transaction sent:", tx);
+        // Wait for transaction confirmation
+        const receipt = await waitForTransactionReceipt(provider, tx as string);
+        console.log("Remove transaction confirmed:", receipt);
+        
+        // Update the UI with the new data
+        setUsers(updatedUsers);
+        // We've successfully updated users, so data is considered fetched
+        setDataFetched(true);
+        resetPopovers();
+        
+      } catch (txError) {
+        console.error("Transaction error during removal:", txError);
+        alert("Failed to save your Top6 profile changes to the blockchain. Please try again.");
+      } finally {
+        // End loading state
+        setIsLoading(false);
+      }
+      
+    } catch (error) {
+      console.error("Error removing address:", error);
+      setIsLoading(false);
+    }
+  };
+
   // Connect to the UP wallet
   const connectWallet = async () => {
     try {
@@ -362,6 +437,7 @@ export function Top6Provider({ children }: { children: ReactNode }) {
     handleCardClick,
     resetPopovers,
     handleAddressSelected,
+    handleRemoveAddress,
     connectWallet,
     fetchTop6ProfileData,
     profileConnected,
