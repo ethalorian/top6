@@ -25,11 +25,12 @@ const FollowButton = memo(function FollowButtonInner({
   const addressRef = useRef(address)
   const [isFollowing, setIsFollowing] = useState<boolean>(false)
   const [isLoading, setIsLoading] = useState<boolean>(false)
-  const [isCheckingStatus, setIsCheckingStatus] = useState<boolean>(true)
+  // Start with button enabled
+  const [isCheckingStatus, setIsCheckingStatus] = useState<boolean>(false)
   
   // Create stable references to track component state
   const isMountedRef = useRef(true)
-  const lastFollowStatusRef = useRef<boolean | null>(null)
+  const checkLockRef = useRef(false)
   
   // Get context values (these will trigger re-renders when they change)
   const { followAddress, unfollowAddress, checkIsFollowing, profileConnected, accounts } = useTop6()
@@ -41,56 +42,56 @@ const FollowButton = memo(function FollowButtonInner({
   
   // Memoize the follow status check to avoid new function references
   const checkFollowStatus = useCallback(async () => {
-    if (!profileConnected || !accounts || accounts.length === 0 || !addressRef.current) {
-      setIsCheckingStatus(false)
-      return
-    }
-
-    // Skip redundant checks
-    if (!isMountedRef.current) return
+    // Don't run check if already checking or component not mounted
+    if (checkLockRef.current || !isMountedRef.current) return
+    if (!profileConnected || !accounts || accounts.length === 0 || !addressRef.current) return
     
     try {
+      checkLockRef.current = true
       setIsCheckingStatus(true)
+      
       const followStatus = await checkIsFollowing(addressRef.current)
       
-      // Only update state if it's different to prevent re-render cycles
-      if (isMountedRef.current && lastFollowStatusRef.current !== followStatus) {
-        lastFollowStatusRef.current = followStatus
+      if (isMountedRef.current) {
         setIsFollowing(followStatus)
       }
     } catch (error) {
-      console.error("Error checking follow status:", error)
+      console.error("Error in checkFollowStatus:", error)
     } finally {
       if (isMountedRef.current) {
         setIsCheckingStatus(false)
       }
+      // Release lock after a slight delay to prevent immediate retries
+      setTimeout(() => {
+        checkLockRef.current = false
+      }, 500)
     }
   }, [profileConnected, accounts, checkIsFollowing])
 
-  // Check status on mount and when dependencies change
+  // Run status check only once on mount or deps change
   useEffect(() => {
-    checkFollowStatus()
-    
-    // Safety timeout to ensure button becomes active
-    const timer = setTimeout(() => {
+    // Always ensure button is enabled eventually
+    const enableTimer = setTimeout(() => {
       if (isMountedRef.current) {
         setIsCheckingStatus(false)
       }
-    }, 2000)
+    }, 1500)
+    
+    checkFollowStatus()
     
     return () => {
-      clearTimeout(timer)
+      clearTimeout(enableTimer)
     }
   }, [checkFollowStatus])
   
-  // Cleanup on unmount
+  // Clean up on unmount
   useEffect(() => {
     return () => {
       isMountedRef.current = false
     }
   }, [])
 
-  // Memoize the follow/unfollow handler to avoid recreating on each render
+  // Handle follow/unfollow action
   const handleFollow = useCallback(async () => {
     if (!profileConnected || !accounts || accounts.length === 0) {
       alert("Please connect your Universal Profile first")
@@ -104,13 +105,11 @@ const FollowButton = memo(function FollowButtonInner({
       if (isFollowing) {
         await unfollowAddress(addressRef.current)
         if (isMountedRef.current) {
-          lastFollowStatusRef.current = false
           setIsFollowing(false)
         }
       } else {
         await followAddress(addressRef.current)
         if (isMountedRef.current) {
-          lastFollowStatusRef.current = true
           setIsFollowing(true)
         }
       }
@@ -123,12 +122,8 @@ const FollowButton = memo(function FollowButtonInner({
     }
   }, [profileConnected, accounts, followAddress, unfollowAddress, isFollowing])
 
-  if (!profileConnected || !accounts || accounts.length === 0) {
-    return null
-  }
-
-  // Don't show follow button for user's own address
-  if (accounts[0] === addressRef.current) {
+  // Don't render button for user's own profile or when not connected
+  if (!profileConnected || !accounts || accounts.length === 0 || accounts[0] === addressRef.current) {
     return null
   }
 

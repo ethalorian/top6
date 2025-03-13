@@ -96,6 +96,7 @@ export function Top6Provider({ children }: { children: ReactNode }) {
   const [isLoading, setIsLoading] = useState(true);
   const [dataFetched, setDataFetched] = useState(false);
   const currentAccountRef = useRef<string | null>(null);
+  const followStatusCache = useRef<Record<string, { status: boolean; timestamp: number }>>({});
 
   // Get Universal Profile context
   const { accounts, profileConnected, provider } = useUPProvider();
@@ -515,7 +516,27 @@ export function Top6Provider({ children }: { children: ReactNode }) {
 
     try {
       const followerAddress = accounts[0];
-      return await checkIsFollowing(provider, followerAddress, addressToCheck);
+      const cacheKey = `${followerAddress}_${addressToCheck}`;
+      const now = Date.now();
+      
+      // Use cache if available and recent (last 30 seconds)
+      if (followStatusCache.current[cacheKey] && 
+          now - followStatusCache.current[cacheKey].timestamp < 30000) {
+        console.log(`Using cached follow status for ${addressToCheck}: ${followStatusCache.current[cacheKey].status}`);
+        return followStatusCache.current[cacheKey].status;
+      }
+      
+      console.log(`Cache miss, checking blockchain follow status for ${addressToCheck}`);
+      const status = await checkIsFollowing(provider, followerAddress, addressToCheck);
+      console.log(`Got follow status for ${addressToCheck}: ${status}`);
+      
+      // Update cache
+      followStatusCache.current[cacheKey] = {
+        status,
+        timestamp: now
+      };
+      
+      return status;
     } catch (error) {
       console.error("Error checking follow status:", error);
       return false;
