@@ -125,7 +125,6 @@ export function ProfilePanel({ user }: ProfilePanelProps) {
           <FollowButton 
             address={user.address} 
             className="bg-[#4a044e] hover:bg-[#3a033e] text-white rounded-sm h-auto py-[3%] px-[5%] flex-1 text-[clamp(0.8rem,1.5vw,1.1rem)]"
-            variant="default"
             showText={true}
           />
         </div>
