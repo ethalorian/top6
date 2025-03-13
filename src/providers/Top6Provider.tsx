@@ -507,7 +507,7 @@ export function Top6Provider({ children }: { children: ReactNode }) {
   };
 
   // Check if current user is following an address
-  const handleCheckIsFollowing = async (addressToCheck: string) => {
+  const handleCheckIsFollowing = useCallback(async (addressToCheck: string) => {
     if (!profileConnected || !accounts || accounts.length === 0) {
       console.log("Cannot check follow status: Profile not connected or no account selected");
       return false;
@@ -520,7 +520,7 @@ export function Top6Provider({ children }: { children: ReactNode }) {
       console.error("Error checking follow status:", error);
       return false;
     }
-  };
+  }, [profileConnected, accounts, provider]);
 
   // Context value
   const contextValue: Top6ContextType = {
