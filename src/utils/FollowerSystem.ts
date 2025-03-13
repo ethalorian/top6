@@ -1,4 +1,8 @@
 import { ethers } from "ethers";
+import { createClientUPProvider } from "@/providers/up-provider";
+
+// Define provider interface to avoid using 'any'
+type UPProviderType = ReturnType<typeof createClientUPProvider>;
 
 // LSP26 Follower System contract address on LUKSO mainnet
 export const LSP26_CONTRACT_ADDRESS = '0xf01103E5a9909Fc0DBe8166dA7085e0285daDDcA';
@@ -65,7 +69,7 @@ export const LSP26_ABI = [
  * @returns A promise that resolves when the follow transaction is sent
  */
 export async function followAddress(
-  provider: any,
+  provider: UPProviderType,
   followerAddress: string,
   addressToFollow: string
 ): Promise<string> {
@@ -100,7 +104,7 @@ export async function followAddress(
  * @returns A promise that resolves when the unfollow transaction is sent
  */
 export async function unfollowAddress(
-  provider: any,
+  provider: UPProviderType,
   followerAddress: string,
   addressToUnfollow: string
 ): Promise<string> {
@@ -135,13 +139,16 @@ export async function unfollowAddress(
  * @returns A promise that resolves to true if following, false otherwise
  */
 export async function checkIsFollowing(
-  provider: any,
+  provider: UPProviderType,
   followerAddress: string,
   followedAddress: string
 ): Promise<boolean> {
   try {
     // Create an ethers provider
-    const ethersProvider = new ethers.providers.Web3Provider(provider);
+    // Need to cast here because Web3Provider expects a specific Provider type
+    // This is a safe cast because the UP provider implements the required methods
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const ethersProvider = new ethers.providers.Web3Provider(provider as any);
     
     // Create a contract instance
     const contract = new ethers.Contract(
