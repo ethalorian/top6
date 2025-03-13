@@ -127,22 +127,36 @@ const FollowButton = memo(function FollowButtonInner({
     return null
   }
 
+  // Determine button style based on follow status
+  const buttonStyle = isFollowing 
+    ? "bg-[#381038] hover:bg-[#4a044e] border border-[#ffffff40]" 
+    : "bg-[#4a044e] hover:bg-[#3a033e]";
+    
+  // Determine icon size and margin based on size prop
+  const iconSize = size === "sm" ? "h-3 w-3" : "h-4 w-4";
+  const iconMargin = showText ? "mr-2" : "";
+
   return (
     <Button
-      variant={variant}
+      variant="default"
       size={size}
       onClick={handleFollow}
       disabled={isLoading || isCheckingStatus}
-      className={className}
+      className={`${buttonStyle} text-white rounded-sm transition-colors duration-200 ${className}`}
+      title={isFollowing ? "Unfollow this profile" : "Follow this profile"}
     >
       {isLoading ? (
-        <Loader2 className="h-4 w-4 animate-spin mr-2" />
+        <Loader2 className={`${iconSize} animate-spin ${iconMargin}`} />
       ) : isFollowing ? (
-        <UserCheck className="h-4 w-4 mr-2" />
+        <UserCheck className={`${iconSize} ${iconMargin}`} />
       ) : (
-        <UserPlus className="h-4 w-4 mr-2" />
+        <UserPlus className={`${iconSize} ${iconMargin}`} />
       )}
-      {showText && (isFollowing ? "Unfollow" : "Follow")}
+      {showText && (
+        <span className="font-medium">
+          {isFollowing ? "Unfollow" : "Follow"}
+        </span>
+      )}
     </Button>
   )
 })

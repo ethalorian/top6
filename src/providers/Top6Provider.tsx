@@ -460,7 +460,7 @@ export function Top6Provider({ children }: { children: ReactNode }) {
   };
 
   // Follow an address
-  const handleFollowAddress = async (addressToFollow: string) => {
+  const handleFollowAddress = useCallback(async (addressToFollow: string) => {
     if (!profileConnected || !accounts || accounts.length === 0) {
       console.error("Cannot follow address: Profile not connected or no account selected");
       return;
@@ -469,22 +469,42 @@ export function Top6Provider({ children }: { children: ReactNode }) {
     try {
       setIsLoading(true);
       const followerAddress = accounts[0];
+      
+      // Update cache immediately for responsive UI
+      const cacheKey = `${followerAddress}_${addressToFollow}`;
+      followStatusCache.current[cacheKey] = {
+        status: true,
+        timestamp: Date.now()
+      };
+      
       const tx = await followAddress(provider, followerAddress, addressToFollow);
       
       // Wait for transaction confirmation
       await waitForTransactionReceipt(provider, tx);
       console.log("Follow transaction confirmed");
       
+      // Revalidate the cache with current timestamp after confirmation
+      followStatusCache.current[cacheKey] = {
+        status: true,
+        timestamp: Date.now()
+      };
+      
     } catch (error) {
       console.error("Error following address:", error);
       alert("Failed to follow address. Please try again.");
+      
+      // Revert cache on error
+      if (accounts && accounts.length > 0) {
+        const cacheKey = `${accounts[0]}_${addressToFollow}`;
+        delete followStatusCache.current[cacheKey];
+      }
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [profileConnected, accounts, provider, waitForTransactionReceipt]);
 
   // Unfollow an address
-  const handleUnfollowAddress = async (addressToUnfollow: string) => {
+  const handleUnfollowAddress = useCallback(async (addressToUnfollow: string) => {
     if (!profileConnected || !accounts || accounts.length === 0) {
       console.error("Cannot unfollow address: Profile not connected or no account selected");
       return;
@@ -493,19 +513,39 @@ export function Top6Provider({ children }: { children: ReactNode }) {
     try {
       setIsLoading(true);
       const followerAddress = accounts[0];
+      
+      // Update cache immediately for responsive UI
+      const cacheKey = `${followerAddress}_${addressToUnfollow}`;
+      followStatusCache.current[cacheKey] = {
+        status: false,
+        timestamp: Date.now()
+      };
+      
       const tx = await unfollowAddress(provider, followerAddress, addressToUnfollow);
       
       // Wait for transaction confirmation
       await waitForTransactionReceipt(provider, tx);
       console.log("Unfollow transaction confirmed");
       
+      // Revalidate the cache with current timestamp after confirmation
+      followStatusCache.current[cacheKey] = {
+        status: false,
+        timestamp: Date.now()
+      };
+      
     } catch (error) {
       console.error("Error unfollowing address:", error);
       alert("Failed to unfollow address. Please try again.");
+      
+      // Revert cache on error
+      if (accounts && accounts.length > 0) {
+        const cacheKey = `${accounts[0]}_${addressToUnfollow}`;
+        delete followStatusCache.current[cacheKey];
+      }
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [profileConnected, accounts, provider, waitForTransactionReceipt]);
 
   // Check if current user is following an address
   const handleCheckIsFollowing = useCallback(async (addressToCheck: string) => {
