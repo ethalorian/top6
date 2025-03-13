@@ -132,8 +132,10 @@ export function Top6Provider({ children }: { children: ReactNode }) {
         // Process each address and put it in its corresponding position
         for (let i = 0; i < addresses.length; i++) {
           const addr = addresses[i];
-          // Skip empty slots
-          if (!addr || addr.trim() === '') continue;
+          // Skip empty slots or zero addresses
+          if (!addr || addr.trim() === '' || addr === '0x0000000000000000000000000000000000000000') {
+            continue;
+          }
           
           try {
             // Fetch profile metadata for each address
@@ -294,7 +296,8 @@ export function Top6Provider({ children }: { children: ReactNode }) {
       const addresses: string[] = [];
       // Ensure we have exactly 6 slots
       for (let i = 0; i < 6; i++) {
-        if (i < updatedUsers.length && updatedUsers[i].hasData && updatedUsers[i].address) {
+        if (i < updatedUsers.length && updatedUsers[i].hasData && updatedUsers[i].address && 
+            updatedUsers[i].address !== '0x0000000000000000000000000000000000000000') {
           addresses[i] = updatedUsers[i].address;
         } else {
           addresses[i] = '';
@@ -374,7 +377,8 @@ export function Top6Provider({ children }: { children: ReactNode }) {
       const addresses: string[] = [];
       // Ensure we have exactly 6 slots
       for (let i = 0; i < 6; i++) {
-        if (i < updatedUsers.length && updatedUsers[i].hasData && updatedUsers[i].address) {
+        if (i < updatedUsers.length && updatedUsers[i].hasData && updatedUsers[i].address && 
+            updatedUsers[i].address !== '0x0000000000000000000000000000000000000000') {
           addresses[i] = updatedUsers[i].address;
         } else {
           addresses[i] = '';
